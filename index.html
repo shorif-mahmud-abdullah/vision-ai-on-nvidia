@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vision AI on NVIDIA GPUs: a hands-on course</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  --paper: #f5f7fa; --surface: #ffffff; --ink: #162033; --muted: #566277; --line: #d3dae5; --soft: #eef2f7;
+  --green: #4a8700; --green-soft: #e4f1d0; --focus: #2457c5; --warn: #b45309; --warn-soft: #fdf0dc;
+  --code-bg: #14202e; --code-ink: #d7e3f2;
+  --ph-1: #4b63c9; --ph-2: #1f8a8a; --ph-3: #a96d12; --ph-4: #8a4fb8; --ph-5: #5f6f85;
+  --head: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1520; --surface: #161e2d; --ink: #e8edf5; --muted: #9aa7ba; --line: #2a3548; --soft: #1b2535;
+    --green: #8dcc2c; --green-soft: #1f2e12; --focus: #7aa2ff; --warn: #f0b35a; --warn-soft: #33260f; --code-bg: #0a1018;
+    --ph-1: #8197f0; --ph-2: #46c2c2; --ph-3: #e0a23c; --ph-4: #be8ae8; --ph-5: #9aaac0; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1520; --surface: #161e2d; --ink: #e8edf5; --muted: #9aa7ba; --line: #2a3548; --soft: #1b2535;
+  --green: #8dcc2c; --green-soft: #1f2e12; --focus: #7aa2ff; --warn: #f0b35a; --warn-soft: #33260f; --code-bg: #0a1018;
+  --ph-1: #8197f0; --ph-2: #46c2c2; --ph-3: #e0a23c; --ph-4: #be8ae8; --ph-5: #9aaac0; color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 76px); }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.6; }
+h1, h2, h3 { font-family: var(--head); font-weight: 700; line-height: 1.18; margin: 0; letter-spacing: -0.01em; }
+a { color: var(--focus); }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+p { margin: 0 0 12px; }
+
+/* top bar */
+.nav { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px); }
+.nav-in { max-width: 1120px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; gap: 22px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-family: var(--head); font-weight: 700; font-size: 18px; white-space: nowrap; }
+.mark { width: 26px; height: 26px; border-radius: 7px; background: var(--green); display: grid; place-items: center; }
+.mark svg { width: 16px; height: 16px; }
+.links { display: flex; gap: 2px; margin-right: auto; overflow-x: auto; }
+.links a { text-decoration: none; color: var(--muted); padding: 8px 12px; border-radius: 8px; font-weight: 600; white-space: nowrap; }
+.links a:hover { color: var(--ink); background: var(--soft); }
+.links a[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -3px 0 var(--green); border-radius: 8px 8px 0 0; }
+.right { display: flex; align-items: center; gap: 10px; }
+.prog { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--ink); font-size: 14px; font-weight: 600; white-space: nowrap; }
+.prog .bar { width: 70px; height: 7px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.prog .bar i { display: block; height: 100%; width: 0; background: var(--green); transition: width .3s ease; }
+.btn { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 11px; cursor: pointer; font-size: 14px; }
+.btn:hover { border-color: var(--green); }
+@media (max-width: 760px) { .nav-in { flex-wrap: wrap; gap: 8px 14px; } .links { order: 3; width: 100%; } .prog .bar { display: none; } }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding: 34px 20px 70px; }
+.page[hidden] { display: none; }
+.crumb { color: var(--muted); font-size: 14.5px; margin-bottom: 8px; }
+h1.big { font-size: clamp(30px, 4.6vw, 48px); max-width: 17ch; }
+.lead { font-size: 19px; max-width: 62ch; margin-top: 16px; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.go { display: inline-block; padding: 11px 18px; background: var(--ink); color: var(--surface); border-radius: 10px; text-decoration: none; font-weight: 600; }
+.go.alt { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.go:hover { outline: 2px solid var(--green); }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 36px; align-items: center; }
+@media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
+.sec { margin-top: 44px; }
+.sec > h2 { font-size: 25px; padding-bottom: 8px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.sec > h2 small { font-family: var(--body); font-weight: 400; font-size: 14px; color: var(--muted); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 16px; }
+@media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
+.two h3 { font-size: 17px; margin-bottom: 6px; }
+.two ul, .plain-list { margin: 0; padding-left: 20px; }
+.two li, .plain-list li { margin: 4px 0; }
+.note { margin-top: 26px; padding: 14px 16px; background: var(--green-soft); border-radius: 10px; max-width: 80ch; }
+.note b { font-weight: 600; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 16px; }
+@media (max-width: 860px) { .steps { grid-template-columns: 1fr 1fr; } }
+.steps div { border-top: 3px solid var(--green); padding-top: 8px; }
+.steps b { font-family: var(--head); display: block; font-size: 17px; }
+.steps span { color: var(--muted); font-size: 15.5px; }
+
+/* figure */
+.fig { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.fig svg { display: block; min-width: 720px; width: 100%; height: auto; }
+.fig .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.fig .nvb { stroke: var(--green); stroke-width: 2.5; }
+.fig text { fill: var(--ink); font-family: var(--body); }
+.fig .a { font-weight: 600; font-size: 15px; }
+.fig .b { font-size: 12.5px; fill: var(--muted); }
+.fig .lane { font-family: var(--head); font-weight: 700; font-size: 15px; fill: var(--muted); }
+.fig .ln { stroke: var(--muted); stroke-width: 1.8; fill: none; }
+
+/* item lists (tools, ecosystem) */
+.tools { margin-top: 12px; }
+.tool { display: grid; grid-template-columns: 210px 1fr; gap: 6px 24px; padding: 15px 0; border-top: 1px solid var(--line); }
+.tool:first-child { border-top: 0; }
+.tool h3 { font-size: 18px; }
+.tool small { display: block; font-family: var(--body); font-weight: 400; font-size: 14px; color: var(--muted); margin-top: 2px; }
+.tool p { margin: 0 0 6px; max-width: 70ch; }
+.tool .does { color: var(--muted); }
+.tool .ties { font-size: 15.5px; border-left: 3px solid var(--green); padding-left: 10px; margin-top: 8px; }
+.tool .ties b { font-weight: 600; }
+.tool .lk { font-size: 15px; margin-top: 6px; }
+.tool .lk a { margin-right: 14px; }
+@media (max-width: 720px) { .tool { grid-template-columns: 1fr; } }
+.gloss { display: grid; grid-template-columns: 190px 1fr; gap: 8px 20px; margin: 14px 0 0; }
+.gloss dt { font-weight: 600; }
+.gloss dd { margin: 0; color: var(--muted); max-width: 70ch; }
+@media (max-width: 720px) { .gloss { grid-template-columns: 1fr; gap: 2px; } .gloss dd { margin-bottom: 8px; } }
+
+/* course map */
+.stats { display: flex; flex-wrap: wrap; gap: 10px 34px; margin: 18px 0 6px; }
+.stats div b { font-family: var(--head); font-size: 26px; display: block; line-height: 1.1; }
+.stats div span { color: var(--muted); font-size: 14.5px; }
+.band { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; padding: 24px 0; border-top: 1px solid var(--line); }
+@media (max-width: 860px) { .band { grid-template-columns: 1fr; gap: 12px; } }
+.band h2 { font-size: 21px; display: flex; gap: 9px; align-items: center; }
+.band h2 i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; flex: none; }
+.band p { color: var(--muted); margin: 6px 0 0; font-size: 15.5px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.tile { display: block; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.tile:hover { border-color: var(--green); }
+.tile .d { font-size: 13.5px; color: var(--muted); }
+.tile b { display: block; font-family: var(--head); font-size: 17px; line-height: 1.25; margin: 2px 0 8px; }
+.tile .m { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.tile .m i { display: block; height: 100%; background: var(--green); }
+.tile .s { display: flex; justify-content: space-between; font-size: 13.5px; color: var(--muted); margin-top: 6px; }
+
+/* topic page */
+.strip { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+.strip a { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink); font-weight: 600; font-size: 14px; background: var(--surface); }
+.strip a[data-s="part"] { border-color: var(--green); }
+.strip a[data-s="done"] { background: var(--green); border-color: var(--green); color: var(--surface); }
+.strip a[aria-current="page"] { outline: 3px solid var(--focus); outline-offset: 1px; }
+.tgrid { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 44px; align-items: start; }
+@media (max-width: 960px) { .tgrid { grid-template-columns: 1fr; } .rail { display: none; } }
+.rail { position: sticky; top: 84px; font-size: 15px; }
+.rail h2 { font-family: var(--body); font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+.rail button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 5px 0 5px 10px; color: var(--ink); cursor: pointer; border-left: 2px solid var(--line); }
+.rail button:hover { border-left-color: var(--green); }
+.rail .meterbox { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); }
+.rail .meter { height: 7px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 6px 0; }
+.rail .meter i { display: block; height: 100%; background: var(--green); width: 0; }
+.page h1.t { font-size: clamp(28px, 4vw, 40px); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 2px 10px; font-size: 14px; color: var(--muted); }
+.chip.on { border-color: var(--focus); color: var(--focus); }
+.goal { margin: 24px 0 0; padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 0 10px 10px 0; }
+.goal h2 { font-size: 15px; color: var(--muted); font-family: var(--body); font-weight: 600; margin-bottom: 4px; }
+.goal p { margin: 0 0 8px; } .goal p:last-child { margin: 0; } .goal b { font-weight: 600; }
+.concept { margin-top: 18px; padding-left: 16px; border-left: 3px solid var(--line); }
+.concept h3 { font-size: 18px; margin-bottom: 4px; }
+.concept p { margin: 0; max-width: 66ch; }
+pre { margin: 10px 0 0; background: var(--code-bg); color: var(--code-ink); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-family: var(--mono); font-size: 13.5px; line-height: 1.5; position: relative; }
+pre.has-cp { padding-right: 64px; }
+.cp { position: absolute; top: 6px; right: 6px; background: transparent; border: 1px solid #3a4a60; color: #a9bad0; border-radius: 6px; font-size: 12px; padding: 2px 8px; cursor: pointer; }
+.cp:hover { color: #fff; border-color: #6c819e; }
+.task { margin-top: 12px; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 12px 14px; }
+.task label { display: grid; grid-template-columns: 24px 1fr; gap: 10px; cursor: pointer; align-items: start; }
+.task input, .tick input { width: 18px; height: 18px; margin: 4px 0 0; accent-color: var(--green); }
+.task b { font-weight: 600; display: block; }
+.task span.d { color: var(--muted); display: block; font-size: 15.5px; }
+.task input:checked ~ div b { text-decoration: line-through; text-decoration-color: var(--muted); color: var(--muted); }
+.task pre { margin-left: 34px; }
+.assign { margin-top: 14px; border: 2px solid var(--green); background: var(--surface); border-radius: 12px; padding: 16px 18px; }
+.assign h3 { font-size: 20px; }
+.assign .meta { color: var(--muted); font-size: 14.5px; margin: 2px 0 10px; }
+.assign h4 { font-family: var(--head); font-size: 15px; margin: 12px 0 4px; }
+.assign ul { margin: 0; padding-left: 20px; }
+.assign li { margin: 3px 0; }
+.tick { display: flex; gap: 10px; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); cursor: pointer; font-weight: 600; }
+.further { margin-top: 14px; padding: 14px 16px; background: var(--soft); border-radius: 10px; }
+.further h3 { font-size: 17px; margin-bottom: 4px; }
+.further p { margin: 0 0 6px; max-width: 66ch; }
+details { margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+summary { padding: 10px 14px; cursor: pointer; font-weight: 600; }
+details p { padding: 0 14px 12px; margin: 0; color: var(--muted); }
+details .in { padding: 0 14px 14px; }
+.res { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 14px; }
+.res a { display: block; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 12px 14px; text-decoration: none; color: var(--ink); }
+.res a:hover { border-color: var(--green); }
+.res b { display: block; font-weight: 600; } .res span { display: block; color: var(--muted); font-size: 15px; }
+.res em { font-style: normal; font-size: 12.5px; border: 1px solid var(--line); border-radius: 5px; padding: 0 7px; margin-top: 6px; display: inline-block; color: var(--muted); }
+.pn { display: flex; justify-content: space-between; gap: 12px; margin-top: 44px; padding-top: 22px; border-top: 1px solid var(--line); }
+.pn a { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 16px; text-decoration: none; color: var(--ink); max-width: 48%; }
+.pn a:hover { border-color: var(--green); }
+.pn a.next { background: var(--ink); color: var(--surface); margin-left: auto; text-align: right; }
+.pn small { display: block; font-size: 13px; opacity: .75; }
+
+/* tables */
+.tw { overflow-x: auto; margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 15.5px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--head); font-size: 14.5px; background: var(--soft); }
+tr:last-child td { border-bottom: 0; }
+td.k { font-weight: 600; white-space: nowrap; }
+
+/* assignments page */
+.arow { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 4px 14px; align-items: start; padding: 12px 0; border-top: 1px solid var(--line); }
+.arow .n { font-family: var(--head); font-weight: 700; font-size: 20px; color: var(--muted); }
+.arow b { font-weight: 600; }
+.arow .m { color: var(--muted); font-size: 14.5px; }
+.arow .t { font-size: 14px; }
+.arow details { grid-column: 2 / 4; margin-top: 4px; }
+.cap { margin-top: 18px; padding: 18px 20px; border: 2px solid var(--focus); border-radius: 12px; background: var(--surface); }
+.cap h3 { font-size: 22px; }
+.chk { margin: 12px 0 0; padding: 0; list-style: none; }
+.chk li { padding: 7px 0; border-top: 1px solid var(--line); }
+.chk label { display: grid; grid-template-columns: 24px 1fr; gap: 10px; cursor: pointer; }
+.chk input { width: 18px; height: 18px; margin: 4px 0 0; accent-color: var(--green); }
+
+footer { max-width: 1120px; margin: 0 auto; padding: 26px 20px 50px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14.5px; }
+@media (prefers-reduced-motion: reduce) { .prog .bar i { transition: none; } }
+</style>
+</head>
+<body>
+<header class="nav"><div class="nav-in">
+  <a class="brand" href="#start" aria-label="Home"><span class="mark"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h3l2-5 2 10 2-5h3" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Vision AI on NVIDIA</a>
+  <nav class="links" aria-label="Pages">
+    <a href="#course" data-r="course">Course</a><a href="#assignments" data-r="assignments">Assignments</a><a href="#ecosystem" data-r="ecosystem">Ecosystem</a><a href="#glossary" data-r="glossary">Glossary</a>
+  </nav>
+  <div class="right"><a class="prog" href="#course" id="prog" aria-label="Your progress"><span id="prog-t">0% done</span><span class="bar"><i id="prog-f"></i></span></a><button class="btn" id="theme" type="button">Dark mode</button></div>
+</div></header>
+
+<main class="wrap" id="main">
+
+<!-- ================= START ================= -->
+<section class="page" id="page-start" aria-labelledby="h-start">
+  <div class="hero">
+    <div>
+      <div class="crumb">A hands-on course, 15 days</div>
+      <h1 class="big" id="h-start">Teach a computer to watch video, on NVIDIA GPUs</h1>
+      <p class="lead">Suppose you have many cameras and you want a computer to watch them for you. For example, to spot a worker without a helmet, count people at a gate, or see someone in a restricted area. This course shows how, using NVIDIA’s tools for vision AI. You learn each piece in plain words, build it, and prove that it works with an assignment.</p>
+      <div class="cta"><a class="go" href="#topic-1">Start day 1</a><a class="go alt" href="#course">See the course map</a></div>
+    </div>
+    <div class="fig-wrap">
+<div class="fig">
+      <svg viewBox="0 0 880 340" role="img" aria-label="Two rows. Top row: cameras, DeepStream, your rules, alerts. Bottom row: footage, labelling, augmentation, TAO training, ONNX and TensorRT engine, which feeds back into DeepStream.">
+        <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/></marker></defs>
+        <text class="lane" x="20" y="26">While the system runs</text>
+        <rect class="box" x="20" y="40" width="150" height="70" rx="9"/><text class="a" x="36" y="70">Cameras</text><text class="b" x="36" y="92">live video (RTSP)</text>
+        <rect class="box nvb" x="215" y="40" width="270" height="70" rx="9"/><text class="a" x="231" y="70">DeepStream</text><text class="b" x="231" y="92">decode, detect, track, classify</text>
+        <rect class="box" x="530" y="40" width="150" height="70" rx="9"/><text class="a" x="546" y="70">Your rules</text><text class="b" x="546" y="92">zones, timing</text>
+        <rect class="box" x="725" y="40" width="135" height="70" rx="9"/><text class="a" x="741" y="70">Alerts</text><text class="b" x="741" y="92">picture, log</text>
+        <path class="ln" d="M170 75 H213" marker-end="url(#ar)"/><path class="ln" d="M485 75 H528" marker-end="url(#ar)"/><path class="ln" d="M680 75 H723" marker-end="url(#ar)"/>
+        <text class="lane" x="20" y="196">How the models are made</text>
+        <rect class="box" x="20" y="212" width="115" height="70" rx="9"/><text class="a" x="34" y="242">Footage</text><text class="b" x="34" y="264">your own clips</text>
+        <rect class="box" x="165" y="212" width="160" height="70" rx="9"/><text class="a" x="179" y="242">Label</text><text class="b" x="179" y="264">Grounding DINO, SAM 2</text>
+        <rect class="box" x="355" y="212" width="170" height="70" rx="9"/><text class="a" x="369" y="242">Augment</text><text class="b" x="369" y="264">OpenCV, ControlNet</text>
+        <rect class="box nvb" x="555" y="212" width="115" height="70" rx="9"/><text class="a" x="569" y="242">TAO</text><text class="b" x="569" y="264">training</text>
+        <rect class="box nvb" x="700" y="212" width="160" height="70" rx="9"/><text class="a" x="714" y="242">TensorRT</text><text class="b" x="714" y="264">ONNX, then engine</text>
+        <path class="ln" d="M135 247 H163" marker-end="url(#ar)"/><path class="ln" d="M325 247 H353" marker-end="url(#ar)"/><path class="ln" d="M525 247 H553" marker-end="url(#ar)"/><path class="ln" d="M670 247 H698" marker-end="url(#ar)"/>
+        <path class="ln" d="M780 212 V160 H350 V112" marker-end="url(#ar)"/><text class="b" x="560" y="152">the new model goes back into DeepStream</text>
+        <text class="b" x="20" y="326">Green outline: made by NVIDIA. Grey: open source or your own code.</text>
+      </svg>
+    </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>How the course works</h2>
+    <div class="steps">
+      <div><b>Read</b><span>A plain-words explanation of the idea and what you can do with it.</span></div>
+      <div><b>Build</b><span>Five small tasks with commands you can copy and run.</span></div>
+      <div><b>Prove it</b><span>An assignment with a clear hand-in and a way to judge your own work.</span></div>
+      <div><b>Go further</b><span>How the idea connects to the wider NVIDIA ecosystem.</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>The tools, one by one</h2>
+    <p style="margin-top:12px;max-width:66ch">The top row of the picture is the system that runs all day and reads live video. The bottom row is how you make the models it uses. Green outlines are NVIDIA tools.</p>
+<div class="tools">
+      <div class="tool"><h3>NVIDIA GPU, driver and CUDA<small>Made by NVIDIA</small></h3><div><p>A GPU is a chip with thousands of small cores. AI models and video decoding run much faster on it than on a normal CPU. The driver lets the computer talk to the GPU. CUDA is the software layer that AI tools use to run on it.</p><p class="does">What it does for you: it makes everything else fast enough to run in real time.</p></div></div>
+      <div class="tool"><h3>Docker and the NVIDIA Container Toolkit<small>Docker is open source; the toolkit is from NVIDIA</small></h3><div><p>Docker packs a program together with everything it needs, so it runs the same on every machine. The toolkit lets those containers use the GPU.</p><p class="does">What it does for you: you start NVIDIA’s ready-made tools with one command instead of installing dozens of libraries by hand.</p></div></div>
+      <div class="tool"><h3>DeepStream<small>Made by NVIDIA</small></h3><div><p>A toolkit for building video-analytics pipelines. It reads many camera streams at once, decodes them on the GPU, runs AI models on batches of frames, follows objects from frame to frame, and gives you the results. It is built on GStreamer, a common media framework.</p><p class="does">What it does for you: it replaces the hardest part, handling lots of live video quickly, so you only write the rules.</p></div></div>
+      <div class="tool"><h3>PeopleNet and NGC<small>Made by NVIDIA</small></h3><div><p>NGC is NVIDIA’s online catalogue of containers and ready-made models. PeopleNet is one of them: a model that finds people in video.</p><p class="does">What it does for you: you can detect people on day one, without training anything.</p></div></div>
+      <div class="tool"><h3>TAO Toolkit<small>Made by NVIDIA</small></h3><div><p>TAO stands for Train, Adapt and Optimize. You start from a pre-trained model and fine-tune it on your own labelled pictures. You write a short settings file instead of training code, and TAO exports the result as an ONNX file.</p><p class="does">What it does for you: you can teach a model something new, like “helmet on or off”, with much less data and code.</p></div></div>
+      <div class="tool"><h3>TensorRT and ONNX<small>TensorRT is from NVIDIA; ONNX is an open format</small></h3><div><p>ONNX is a common file format for models, so they can move between tools. TensorRT reads an ONNX model and builds an “engine” file, tuned for your exact GPU, that runs faster.</p><p class="does">What it does for you: the same model runs several times faster, so one GPU can watch more cameras.</p></div></div>
+      <div class="tool"><h3>Grounding DINO<small>Open source</small></h3><div><p>A model that finds things in a picture from a text description, such as “a helmet”. You do not train it first.</p><p class="does">What it does for you: it draws the first boxes on your pictures, so people only check and fix them. This saves labelling time.</p></div></div>
+      <div class="tool"><h3>SAM 2<small>Open source, from Meta</small></h3><div><p>Segment Anything Model 2. Once you mark an object in one frame, it can follow that object through a video.</p><p class="does">What it does for you: label a worker once and carry the answer across all the frames where that worker appears.</p></div></div>
+      <div class="tool"><h3>ControlNet and Stable Diffusion<small>Open source</small></h3><div><p>Image-generation tools. With “inpainting” you can change one part of a real photo, for example remove a helmet from a worker’s head.</p><p class="does">What it does for you: it can create rare examples, like workers without helmets, when real footage has very few. Use them for training only.</p></div></div>
+      <div class="tool"><h3>OpenCV<small>Open source</small></h3><div><p>A library for working with images and video: reading frames, drawing zones, brightening dark pictures.</p><p class="does">What it does for you: small image jobs, such as improving night pictures or checking if a person stands inside a zone.</p></div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>What you can build with it</h2>
+    <div class="two">
+      <div><h3>Safety and security</h3><ul><li>Check that workers wear helmets and vests</li><li>Alert when someone enters a restricted area</li><li>Spot people close to moving machines</li></ul></div>
+      <div><h3>Counting and flow</h3><ul><li>Count people or vehicles at a gate</li><li>Measure queues and waiting time</li><li>Find busy hours on a site or in a shop</li></ul></div>
+    </div>
+  </div>
+
+  <div class="note"><b>What this stack does not do for you.</b> It finds and follows objects, and it can run your models quickly. It does not know your rules, and it does not promise accuracy. You decide when an alert is raised, and you must test every model on your own cameras. Topics 6 and 9 show how.</div>
+
+  <div class="sec">
+    <h2>Before you begin</h2>
+    <p style="max-width:66ch">You need a computer with a supported NVIDIA GPU (Turing generation or newer), Ubuntu 24.04, a free NVIDIA NGC account, and some sample video from a real camera. A good pace is one topic a day. If you cannot get a GPU, you can still do the reading, the Python tasks and the assignments that do not need one, and rent a cloud GPU for the rest.</p>
+    <p style="max-width:66ch">There is also an <a href="#ecosystem">ecosystem page</a> for what lies around this course: model libraries, making models smaller, serving, edge devices and synthetic data.</p>
+  </div>
+</section>
+
+<!-- ================= COURSE MAP ================= -->
+<section class="page" id="page-course" hidden aria-labelledby="h-course"></section>
+
+<!-- ================= TOPIC ================= -->
+<section class="page" id="page-topic" hidden></section>
+
+<!-- ================= ASSIGNMENTS ================= -->
+<section class="page" id="page-assignments" hidden aria-labelledby="h-assign"></section>
+
+<!-- ================= ECOSYSTEM ================= -->
+<section class="page" id="page-ecosystem" hidden aria-labelledby="h-eco">
+  <div class="crumb">Beyond the course</div>
+  <h1 class="big" id="h-eco" style="max-width:20ch">The wider NVIDIA ecosystem</h1>
+  <p class="lead">The 15 topics follow one project, from camera to alert. The same tools and ideas work for many other jobs. This page shows what else is around them, so you know what to reach for next. Names and products change, so always check NVIDIA’s current documentation.</p>
+
+  <div class="sec" id="eco-models">
+    <h2>Model libraries <small>Where to find a model before you train one</small></h2>
+    <p style="margin-top:12px;max-width:68ch">You rarely start from nothing. A good model library can save you weeks. These are the main places, and they are used for different things.</p>
+    <div class="tools">
+      <div class="tool"><h3>TAO model zoo<small>NVIDIA, on NGC</small></h3><div><p>It has two kinds of models. Purpose-built models do one job well: PeopleNet finds people (it has three classes: people, bags and faces), TrafficCamNet and DashCamNet find vehicles, FaceDetect-IR finds faces in dark infrared pictures. General-purpose vision models are starting points that you fine-tune on your own data, in more than a hundred combinations of network and backbone. Newer foundation models, such as NV-DINOv2 and a Grounding DINO, are listed too.</p><p class="does">Best when you want to fine-tune with TAO and run in DeepStream.</p><p class="ties"><b>Connects to the course:</b> topics 2, 7 and 9.</p><p class="lk"><a href="https://docs.nvidia.com/tao/tao-toolkit/latest/text/model_zoo/overview.html" target="_blank" rel="noopener">Model zoo overview</a><a href="https://catalog.ngc.nvidia.com" target="_blank" rel="noopener">NGC catalogue</a></p></div></div>
+      <div class="tool"><h3>build.nvidia.com and NIM<small>NVIDIA</small></h3><div><p>build.nvidia.com lets you try NVIDIA-hosted models in a browser or through an API. NIM microservices are ready-made model containers that you can run on your own GPUs; NVIDIA describes them as easy-to-use microservices for accelerated inference on a wide range of AI models, including open community models.</p><p class="does">Best for trying an idea in minutes. Read the licence and terms before you build a product on a hosted model.</p><p class="lk"><a href="https://build.nvidia.com" target="_blank" rel="noopener">build.nvidia.com</a></p></div></div>
+      <div class="tool"><h3>Hugging Face Hub and framework zoos<small>Open source community</small></h3><div><p>Hundreds of thousands of open models for images, text and audio. PyTorch libraries such as torchvision and timm also ship many pre-trained vision models.</p><p class="does">Best for the widest choice. Check each licence, and plan to export the model to ONNX so TensorRT can run it.</p><p class="lk"><a href="https://huggingface.co/models" target="_blank" rel="noopener">Hugging Face models</a><a href="https://pytorch.org/vision/stable/models.html" target="_blank" rel="noopener">torchvision models</a><a href="https://github.com/huggingface/pytorch-image-models" target="_blank" rel="noopener">timm</a></p></div></div>
+    </div>
+    <h3 style="margin-top:22px;font-size:19px">How to choose a model</h3>
+    <ul class="plain-list" style="margin-top:8px;max-width:70ch">
+      <li><b>Task fit.</b> Does it do your exact job, with your classes?</li>
+      <li><b>Your own pictures.</b> Test it on 50 of your own images before you trust any claim.</li>
+      <li><b>Speed on your GPU.</b> A model that is too slow for your camera count is the wrong model.</li>
+      <li><b>Input size.</b> Small, far objects need a higher input resolution.</li>
+      <li><b>Format.</b> Can it become ONNX and then a TensorRT engine?</li>
+      <li><b>Licence.</b> Is commercial use allowed? Some weights are research-only.</li>
+      <li><b>Support.</b> Is it still maintained, and who answers questions?</li>
+    </ul>
+    <div id="lab-E1"></div>
+  </div>
+
+  <div class="sec" id="eco-small">
+    <h2>Making models smaller and faster <small>Quantisation, pruning and distillation</small></h2>
+    <p style="margin-top:12px;max-width:68ch">A model that is accurate but too big or too slow is not useful on a camera box. There are three main ways to shrink a model. You can use them one after another.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Technique</th><th>What it does</th><th>Main benefit</th><th>Main risk</th><th>Effort</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Quantisation</td><td>Stores numbers with fewer bits, for example FP16 or INT8 instead of FP32.</td><td>Faster and smaller, often with little change in accuracy.</td><td>INT8 needs calibration data, or training that expects it. Accuracy can drop on rare cases.</td><td>Low to medium</td></tr>
+        <tr><td class="k">Pruning</td><td>Removes parts of the network that matter little, such as channels or weights.</td><td>A smaller network that runs faster.</td><td>Accuracy falls, so you usually fine-tune again afterwards.</td><td>Medium</td></tr>
+        <tr><td class="k">Distillation</td><td>A big accurate “teacher” model teaches a small “student” model.</td><td>A small, fast model closer to the teacher’s accuracy than it would reach alone.</td><td>Needs the teacher’s predictions on plenty of data, and extra training time.</td><td>Medium to high</td></tr>
+      </tbody>
+    </table></div>
+    <h3 style="margin-top:24px;font-size:19px">Distillation in plain words</h3>
+    <p style="margin-top:8px;max-width:68ch">Think of a master and an apprentice. A normal label only says “this is a helmet”. A teacher model says more: “90% helmet, 8% cap, 2% hood”. That extra information shows how the classes relate, and a small student can learn from it. This is called knowledge distillation.</p>
+    <p style="max-width:68ch"><b>An example with this course.</b> Use a large detector, too heavy for the camera box, as the teacher. Run it on your footage to produce predictions. Train a small detector, light enough to run on the box, to copy those predictions. This is close in spirit to what you did in topic 10, where Grounding DINO gave first-guess boxes. Always check the student on your own real test set.</p>
+    <p style="max-width:68ch"><b>NVIDIA Model Optimizer</b> is NVIDIA’s library for this work. It brings together quantisation, pruning, neural architecture search, distillation and sparsity, and it is free to install. It was called TensorRT Model Optimizer until it was renamed in December 2025. Several of its recipes are aimed at large language models, but the ideas are the same for vision. TAO also has pruning and quantisation steps for several networks, so check the documentation for yours.</p>
+    <p class="lk" style="font-size:15.5px"><a href="https://github.com/NVIDIA/Model-Optimizer" target="_blank" rel="noopener">Model Optimizer on GitHub</a> <a href="https://nvidia.github.io/Model-Optimizer/" target="_blank" rel="noopener">Model Optimizer documentation</a> <a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/index.html" target="_blank" rel="noopener">TensorRT documentation</a></p>
+    <div class="note" style="margin-top:16px"><b>A sensible order.</b> First pick the right-sized model. Then use FP16 through TensorRT. Use INT8 only if you still need more speed. Prune or distil when you need a smaller model. After every step, measure again on the real test set.</div>
+    <div id="lab-E2"></div>
+  </div>
+
+  <div class="sec" id="eco-serve">
+    <h2>Serving models <small>When you need an API, not a video pipeline</small></h2>
+    <div class="tools">
+      <div class="tool"><h3>DeepStream<small>The video route</small></h3><div><p>Video goes in, and metadata comes out. It is the right tool when cameras are the main input. DeepStream can also use Triton as its inference back end.</p><p class="ties"><b>Connects to the course:</b> topics 2 to 6.</p></div></div>
+      <div class="tool"><h3>Dynamo-Triton<small>Formerly Triton Inference Server</small></h3><div><p>An open-source server that runs models from many frameworks behind one API. Its dynamic batching groups many small requests into larger batches to keep the GPU busy. NVIDIA renamed it in March 2025, when it became part of the NVIDIA Dynamo platform. Dynamo itself is a separate framework for serving large generative models across many GPUs.</p><p class="does">Use it when other programs send pictures or text and wait for an answer.</p><p class="lk"><a href="https://github.com/triton-inference-server/server" target="_blank" rel="noopener">Triton on GitHub</a></p></div></div>
+      <div class="tool"><h3>NIM microservices<small>Ready-made model containers</small></h3><div><p>A model, its optimised engine and an API, packed in one container. You start it and call it.</p><p class="does">Use it when you want a working model service quickly, without building the serving parts yourself.</p></div></div>
+    </div>
+  </div>
+
+  <div class="sec" id="eco-edge">
+    <h2>Edge, cloud and hardware</h2>
+    <div class="tools">
+      <div class="tool"><h3>Data-centre and workstation GPUs<small>Where most of this course runs</small></h3><div><p>Powerful and flexible. Good for training, and for servers that read many cameras. Check each model’s number of video decoders, because decoding can be the first limit (topic 3).</p></div></div>
+      <div class="tool"><h3>Jetson<small>Small, low-power edge modules</small></h3><div><p>Compact computers with an NVIDIA GPU, made for cameras, robots and machines. DeepStream and TensorRT run on them, so you can build once and run on a server or at the edge. Models usually need to be smaller, which is where quantisation and distillation help.</p><p class="lk"><a href="https://developer.nvidia.com/embedded-computing" target="_blank" rel="noopener">Jetson and embedded computing</a></p></div></div>
+      <div class="tool"><h3>Cloud GPUs<small>Rent, do not buy</small></h3><div><p>Good for a first trial, for training bursts, and for the supported-GPU test when you do not own one. Costs add up if you leave them running.</p></div></div>
+    </div>
+  </div>
+
+  <div class="sec" id="eco-synth">
+    <h2>Simulation and synthetic data</h2>
+    <div class="tools">
+      <div class="tool"><h3>Omniverse and Replicator<small>NVIDIA</small></h3><div><p>Build a 3D scene and render thousands of pictures from it, with perfect labels for free. It helps for rare or dangerous cases that you cannot film. The risk is the gap between simulated and real pictures, so always test on real footage.</p><p class="ties"><b>Connects to the course:</b> topic 12, where you edited real photos instead of rendering new ones.</p><p class="lk"><a href="https://developer.nvidia.com/omniverse" target="_blank" rel="noopener">NVIDIA Omniverse</a></p></div></div>
+      <div class="tool"><h3>Isaac Sim<small>NVIDIA, for robots</small></h3><div><p>A simulator for robots and machines, built on Omniverse. Use it to test and train robot software before a real robot exists.</p></div></div>
+    </div>
+  </div>
+
+  <div class="sec" id="eco-lang">
+    <h2>Language and multimodal AI</h2>
+    <div class="tools">
+      <div class="tool"><h3>NeMo<small>NVIDIA</small></h3><div><p>A framework to train and customise large language, speech and multimodal models. The workflow is the same as in this course: start from a pre-trained model, fine-tune it on your data, optimise it, then serve it.</p><p class="lk"><a href="https://developer.nvidia.com/nemo-framework" target="_blank" rel="noopener">NeMo framework</a></p></div></div>
+      <div class="tool"><h3>TensorRT-LLM<small>NVIDIA, open source</small></h3><div><p>TensorRT’s counterpart for large language models. It makes text models run faster on NVIDIA GPUs.</p><p class="lk"><a href="https://github.com/NVIDIA/TensorRT-LLM" target="_blank" rel="noopener">TensorRT-LLM on GitHub</a></p></div></div>
+      <div class="tool"><h3>Vision-language models<small>Open and NVIDIA</small></h3><div><p>Models that read pictures and answer in words, or find objects from a description. Grounding DINO, which you met in topic 10, is one kind. They are slower than a small detector, so people often use them offline to label data, and run a small model live.</p></div></div>
+    </div>
+  </div>
+
+  <div class="sec" id="eco-data">
+    <h2>Data science on the GPU</h2>
+    <div class="tools">
+      <div class="tool"><h3>RAPIDS<small>NVIDIA, open source</small></h3><div><p>GPU versions of familiar data tools: cuDF works like pandas, and cuML works like scikit-learn. Use them to prepare and analyse large tables, such as years of alert logs.</p><p class="lk"><a href="https://rapids.ai" target="_blank" rel="noopener">RAPIDS</a></p></div></div>
+    </div>
+  </div>
+
+  <div class="sec" id="eco-learn">
+    <h2>Keep learning</h2>
+    <div class="res">
+      <a href="https://www.nvidia.com/en-us/training/" target="_blank" rel="noopener"><b>NVIDIA Deep Learning Institute</b><span>Courses and workshops, many hands-on.</span><em>Learning</em></a>
+      <a href="https://developer.nvidia.com/blog" target="_blank" rel="noopener"><b>NVIDIA technical blog</b><span>Walkthroughs and new releases.</span><em>Reading</em></a>
+      <a href="https://forums.developer.nvidia.com" target="_blank" rel="noopener"><b>NVIDIA developer forums</b><span>Ask questions about DeepStream, TAO, TensorRT and more.</span><em>Community</em></a>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GLOSSARY ================= -->
+<section class="page" id="page-glossary" hidden aria-labelledby="h-gloss">
+  <div class="crumb">Reference</div>
+  <h1 class="big" id="h-gloss" style="max-width:16ch">Words you will meet</h1>
+  <p class="lead">Short answers in plain words. Terms from the ecosystem page are at the end.</p>
+<dl class="gloss">
+      <dt>Stream</dt><dd>Live video from one camera, usually sent over the network.</dd>
+      <dt>RTSP</dt><dd>The usual way IP cameras send video over a network.</dd>
+      <dt>Decode</dt><dd>Turn compressed video into pictures (frames) a model can read.</dd>
+      <dt>Inference</dt><dd>Running a trained model on new data to get a result.</dd>
+      <dt>Batch</dt><dd>A group of frames processed together, which uses the GPU efficiently.</dd>
+      <dt>Tracker</dt><dd>Software that links the same object across frames and gives it an ID.</dd>
+      <dt>Metadata</dt><dd>The results DeepStream attaches to each frame: boxes, classes, scores and IDs.</dd>
+      <dt>Fine-tuning</dt><dd>Teaching an existing model a new job with your own examples.</dd>
+      <dt>Precision and recall</dt><dd>Precision: of the alerts raised, how many were right. Recall: of the real problems, how many were found.</dd>
+      <dt>Engine</dt><dd>A model file that TensorRT has optimised for one specific GPU.</dd>
+    
+      <dt>Teacher and student</dt><dd>In distillation, the big accurate model (teacher) and the small fast model that learns from it (student).</dd>
+      <dt>Distillation</dt><dd>Training a small model to copy the behaviour of a larger one.</dd>
+      <dt>Quantisation</dt><dd>Storing a model’s numbers with fewer bits, such as FP16 or INT8, to run faster.</dd>
+      <dt>Pruning</dt><dd>Removing parts of a network that matter little, to make it smaller.</dd>
+      <dt>Calibration</dt><dd>Running sample data through a model so INT8 can pick good number ranges.</dd>
+      <dt>Pseudo-labelling</dt><dd>Using a model’s predictions as labels to train another model.</dd>
+      <dt>Foundation model</dt><dd>A large model trained on very broad data, used as a starting point for many jobs.</dd>
+      <dt>Open-vocabulary</dt><dd>A model that finds things you describe in words, not only a fixed list of classes.</dd>
+      <dt>NIM</dt><dd>NVIDIA’s ready-made model containers, with an API.</dd>
+      <dt>Dynamo-Triton</dt><dd>The server formerly known as Triton Inference Server, used to serve models behind an API.</dd>
+      <dt>Jetson</dt><dd>NVIDIA’s small, low-power computers for the edge.</dd>
+      <dt>Sim-to-real gap</dt><dd>The difference between simulated pictures and real ones, which can make a model fail on real footage.</dd>
+      <dt>Drift</dt><dd>Accuracy that slowly falls because the real world, or the cameras, changed after training.</dd>
+      <dt>mAP</dt><dd>Mean average precision, a common single score for object detectors.</dd>
+    </dl>
+</section>
+</main>
+<footer>Independent learning material. It is not made, checked or endorsed by NVIDIA. Product names belong to their owners. Versions and requirements change, so always check NVIDIA’s documentation for the version you use.</footer>
+
+<script>
+(function () {
+  "use strict";
+  var KEY = "vision-ai-nvidia-course-v3";
+
+var STAGES = [
+    { name: "Set up the machine", color: "var(--ph-1)" },
+    { name: "Build the video pipeline", color: "var(--ph-2)" },
+    { name: "Train models with TAO", color: "var(--ph-3)" },
+    { name: "Cut the labelling time", color: "var(--ph-4)" },
+    { name: "Get ready for production", color: "var(--ph-5)" }
+  ];
+
+  var T = [
+  /* ---------------------------------------------------------- 1 */
+  { n: 1, st: 0, title: "Prepare a GPU machine", hours: 4,
+    plain: "Everything in this stack runs on an NVIDIA GPU, so the first job is a computer where the GPU, the driver and Docker all work together. NVIDIA ships DeepStream and TAO as containers, which keep all their libraries packed together, so you do not install them by hand.",
+    can: ["Check that your GPU is supported before you spend days on set-up", "Run NVIDIA tools in containers with one command", "Repeat the same set-up on any new server"],
+    goal: "A supported GPU machine where a container can use the GPU.",
+    deliverable: "nvidia-smi runs inside a DeepStream container and shows your GPU.",
+    why: "Most “it does not work” problems in this stack come from the driver, the GPU generation or the Docker settings. Fix them first and the rest goes smoothly.",
+    concepts: [
+      { t: "GPU generations matter", d: "DeepStream 9.2 lists Turing and newer GPUs (Turing, Ampere, Ada, Hopper, Blackwell). Older cards, such as the Pascal-generation GTX 10 series, are not on the list, and video decoding can fail on them however fast they are.", code: "nvidia-smi --query-gpu=name,compute_cap,memory.total,driver_version --format=csv" },
+      { t: "Driver, CUDA and TensorRT versions", d: "Each DeepStream release names the versions it was tested with. For DeepStream 9.2 these are Ubuntu 24.04, driver 595.58.03, CUDA 13.2 and TensorRT 10.16. Always check the release notes of the version you use." },
+      { t: "Containers", d: "A container is a program packed with its libraries. NVIDIA publishes DeepStream and TAO containers on NGC. The DeepStream image is about 10 GB, so start the download early." },
+      { t: "NVIDIA Container Toolkit", d: "It lets Docker give a container access to the GPU. Without it, a container cannot see the GPU.", code: "sudo nvidia-ctk runtime configure --runtime=docker\nsudo systemctl restart docker" }
+    ],
+    tasks: [
+      { t: "Install Ubuntu 24.04 and the NVIDIA driver", d: "Use the driver version named in the DeepStream release notes, then check it.", code: "nvidia-smi" },
+      { t: "Check the GPU generation and memory", d: "Write down the name, compute capability and memory. You will need them for DeepStream and TAO.", code: "nvidia-smi --query-gpu=name,compute_cap,memory.total --format=csv" },
+      { t: "Install Docker and the NVIDIA Container Toolkit", d: "Follow the official install guide, then run the two configuration commands above." },
+      { t: "Test the GPU inside a container", d: "This pulls the DeepStream image (about 10 GB) the first time.", code: "docker run --rm --gpus all ghcr.io/nvidia/deepstream:9.2-triton-multiarch nvidia-smi" },
+      { t: "Write a short environment note", d: "GPU model, memory, driver, CUDA, TensorRT and Docker versions. It saves hours when something breaks later." }
+    ],
+    res: [
+      { t: "NVIDIA Container Toolkit install guide", d: "Official steps to give Docker access to the GPU.", tag: "Docs", url: "https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html" },
+      { t: "DeepStream SDK", d: "Overview, downloads and documentation links.", tag: "Docs", url: "https://developer.nvidia.com/deepstream-sdk" },
+      { t: "NGC catalogue", d: "NVIDIA’s containers and pre-trained models.", tag: "Catalogue", url: "https://catalog.ngc.nvidia.com" }
+    ],
+    check: [
+      { q: "Why can a fast older GPU still be a problem for DeepStream?", a: "DeepStream lists only Turing and newer GPUs. Video decoding and other features may not work on older generations, however fast the card is." },
+      { q: "What does the NVIDIA Container Toolkit do?", a: "It lets Docker containers use the computer’s GPU." }
+    ] },
+
+  /* ---------------------------------------------------------- 2 */
+  { n: 2, st: 0, title: "Run DeepStream for the first time", hours: 5,
+    plain: "DeepStream is NVIDIA’s toolkit for video analytics. You describe a pipeline: where the video comes from, which model to run, and where the results go. DeepStream then runs it on the GPU. It is built on GStreamer, a common framework for media pipelines.",
+    can: ["Read many video streams at the same time", "Decode video on the GPU, which leaves the CPU free", "Run AI models on batches of frames and get boxes back"],
+    goal: "See people detected in a video with a ready-made model.",
+    deliverable: "A video with boxes drawn around people, made by a DeepStream sample pipeline.",
+    why: "One working pipeline makes every later setting easier to understand. Start with something that already works, then change one thing at a time.",
+    concepts: [
+      { t: "A pipeline is a chain of plugins", d: "Video flows from a source, through decoding, batching (nvstreammux), a model (nvinfer), a tracker (nvtracker) and drawing (nvdsosd) to an output. Each plugin does one job." },
+      { t: "A ready-made model: PeopleNet", d: "PeopleNet, on NGC, finds people (and a few other classes). You can start without training anything. Always test it on your own camera angles before you trust it." },
+      { t: "Everything is set in a config file", d: "The sample app reads a text file with a block for each part. Reading one is the fastest way to learn the structure.", code: "[source0]\nenable=1\ntype=2\nuri=file:///path/to/clip.mp4\n\n[streammux]\nbatch-size=1\nwidth=1280\nheight=720\n\n[primary-gie]\nenable=1\nconfig-file=config_infer_primary_peoplenet.txt" },
+      { t: "Metadata is the real output", d: "For every frame DeepStream produces metadata: object boxes, class labels, confidence scores and, with a tracker, an ID. This is what your own code reads in topic 5." }
+    ],
+    tasks: [
+      { t: "Open a shell in the DeepStream container", d: "Switch on the video capability so the GPU decoder is available.", code: "docker run --rm -it --gpus all -e NVIDIA_DRIVER_CAPABILITIES=compute,utility,video ghcr.io/nvidia/deepstream:9.2-triton-multiarch bash" },
+      { t: "Restore the CPU decode libraries", d: "The container ships without some libraries. Run the script that installs them (see the container’s README).", code: "/opt/nvidia/deepstream/deepstream/user_additional_install.sh" },
+      { t: "Download PeopleNet from NGC", d: "Download the model files and open its config file to see which settings it uses." },
+      { t: "Run a sample pipeline on your own clip", d: "Change the source block to point at a short video from your own camera.", code: "deepstream-app -c <your_config>.txt" },
+      { t: "Name each block of the config", d: "Write one line for each block: what it does and what happens if you remove it." }
+    ],
+    res: [
+      { t: "PeopleNet model card", d: "Inputs, outputs and limits of the model.", tag: "Model", url: "https://catalog.ngc.nvidia.com/orgs/nvidia/tao/models/peoplenet/-?_lr=1" },
+      { t: "DeepStream SDK", d: "Documentation, samples and release notes.", tag: "Docs", url: "https://developer.nvidia.com/deepstream-sdk" },
+      { t: "GStreamer documentation", d: "The media framework under DeepStream.", tag: "Docs", url: "https://gstreamer.freedesktop.org/documentation/" }
+    ],
+    check: [
+      { q: "What is metadata in DeepStream?", a: "The results attached to each frame: boxes, class labels, scores and track IDs." },
+      { q: "Which plugin groups frames from several cameras into one batch?", a: "nvstreammux." }
+    ] },
+
+  /* ---------------------------------------------------------- 3 */
+  { n: 3, st: 0, title: "Read a real camera and measure decoding", hours: 6,
+    plain: "Real cameras send video over the network, usually with RTSP. The GPU has special hardware, called NVDEC, that decodes video. A GPU has only a few of these units, so decoding can run out long before the AI does. Measure it early.",
+    can: ["Find out how many cameras one GPU can handle", "Choose between a camera’s main stream and its sub-stream", "Find a decoding problem before it becomes a project problem"],
+    goal: "Prove that your GPU can decode your camera, and learn its limit.",
+    deliverable: "A short capacity note: cameras handled, frames per second, and which limit came first.",
+    why: "Hardware cost and the number of cameras per server both depend on this one measurement. Guessing is expensive.",
+    concepts: [
+      { t: "RTSP, main stream and sub-stream", d: "RTSP is the usual protocol for IP cameras. Most cameras offer a main stream (high resolution) and a sub-stream (lower resolution and much lighter to decode). Analysis often works well on the sub-stream." },
+      { t: "NVDEC, the hardware decoder", d: "It decodes video on the GPU, separately from the AI cores. All streams share it, and many consumer GPUs have only one. Check the decoder and the AI load, because either can be the limit." },
+      { t: "Reading the meters", d: "In the output, sm is the AI compute load and dec is the decoder load. A good rule is to keep sm under about 70%. If dec gets near 90%, decoding is your bottleneck.", code: "nvidia-smi dmon -s u" },
+      { t: "Test outside DeepStream first", d: "If a stream fails, you want to know whether the camera, the network or DeepStream is at fault. Test the stream with a simple tool first.", code: "ffprobe -rtsp_transport tcp rtsp://<user>:<password>@<camera-ip>:554/<path>" }
+    ],
+    tasks: [
+      { t: "Test one camera stream with ffprobe", d: "Confirm the codec (H.264 or H.265), the resolution and the frame rate.", code: "ffprobe -rtsp_transport tcp rtsp://<user>:<password>@<camera-ip>:554/<path>" },
+      { t: "Save ten seconds to a file", d: "A saved clip is useful for repeatable tests.", code: "ffmpeg -rtsp_transport tcp -i rtsp://<user>:<password>@<camera-ip>:554/<path> -t 10 -c copy test.mp4" },
+      { t: "Decode the same stream in DeepStream", d: "Set the source type to RTSP in the config. Confirm that frames come out.", code: "[source0]\nenable=1\ntype=4\nuri=rtsp://<user>:<password>@<camera-ip>:554/<path>" },
+      { t: "Watch the GPU and decoder while it runs", d: "Add streams one by one until sm passes about 70% or dec passes about 90%. Write down the number of cameras.", code: "nvidia-smi dmon -s u" },
+      { t: "Repeat with the main stream and compare", d: "Note how much more decoder load the main stream causes." }
+    ],
+    res: [
+      { t: "DeepStream SDK", d: "Source and decoder settings are in the docs.", tag: "Docs", url: "https://developer.nvidia.com/deepstream-sdk" },
+      { t: "GStreamer documentation", d: "How RTSP and decoding plugins work.", tag: "Docs", url: "https://gstreamer.freedesktop.org/documentation/" }
+    ],
+    check: [
+      { q: "Why test a stream with ffprobe before DeepStream?", a: "To tell a camera or network problem apart from a DeepStream problem." },
+      { q: "What does a very high dec value mean?", a: "The hardware video decoder is almost full. Add fewer streams or use the cameras’ sub-streams." }
+    ] },
+
+  /* ---------------------------------------------------------- 4 */
+  { n: 4, st: 1, title: "Batch, sample and track", hours: 5,
+    plain: "Analysing every frame wastes the GPU, because people move slowly compared with 25 or 30 frames per second. Many safety checks work well at 1 or 2 analysed frames per second. A tracker then links detections over time so each person keeps one ID.",
+    can: ["Cut GPU load by analysing fewer frames", "Give every person a stable ID", "Raise one alert per person instead of one per frame"],
+    goal: "Run several cameras at about 2 analysed frames per second, with tracking.",
+    deliverable: "A pipeline where one person keeps the same ID through a 30-second clip.",
+    why: "This is where the number of cameras per GPU is won or lost, and where alerts stop repeating themselves.",
+    concepts: [
+      { t: "Batching with nvstreammux", d: "It groups frames from many cameras into one batch, so the GPU works efficiently. Set the batch size to the number of cameras.", code: "[streammux]\nbatch-size=4\nwidth=1280\nheight=720\nbatched-push-timeout=40000" },
+      { t: "Skipping frames", d: "Decoding still handles every frame, but you can skip the AI on most of them. In nvinfer, interval=N skips N batches between analysed ones. For a 25 fps camera, interval=11 gives about 2 analysed frames per second. A tracker can help carry boxes between analysed frames, so test this on your own footage.", code: "[property]\ninterval=11" },
+      { t: "Trackers", d: "NvDCF is one of NVIDIA’s trackers. It matches objects from frame to frame using their position and appearance. A standard configuration file is a good starting point.", code: "[tracker]\nenable=1\nll-lib-file=/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so\nll-config-file=config_tracker_NvDCF_perf.yml" },
+      { t: "ID switches", d: "When two people cross paths, a tracker can swap their IDs. Count how often it happens in your own clips. It tells you how much to trust the IDs." }
+    ],
+    tasks: [
+      { t: "Combine several sources into one batch", d: "Add a second and a third source and set the batch size to match." },
+      { t: "Skip frames to reach about 2 analysed frames per second", d: "Use interval for your camera’s frame rate and check the GPU load goes down." },
+      { t: "Turn on the NvDCF tracker", d: "Start with the standard config file, then check that boxes carry IDs." },
+      { t: "Follow one person through a clip", d: "Check that the ID stays the same while the person walks across the view." },
+      { t: "Test two people crossing paths", d: "Count the ID switches. Write down the result." }
+    ],
+    res: [
+      { t: "DeepStream SDK", d: "Plugin guides for nvstreammux, nvinfer and nvtracker.", tag: "Docs", url: "https://developer.nvidia.com/deepstream-sdk" },
+      { t: "GStreamer documentation", d: "Background on how plugins connect.", tag: "Docs", url: "https://gstreamer.freedesktop.org/documentation/" }
+    ],
+    check: [
+      { q: "Does skipping inference reduce the decoder load?", a: "No. Every frame is still decoded. Skipping only saves the AI work." },
+      { q: "Why do we need a tracker for alerts?", a: "It gives each person an ID, so we can raise one alert per person instead of one per frame." }
+    ] },
+
+  /* ---------------------------------------------------------- 5 */
+  { n: 5, st: 1, title: "Read the results in Python", hours: 5,
+    plain: "DeepStream finds and follows things, but it does not know your rules. To decide “is this worker missing a helmet?”, you read the results in your own code. NVIDIA’s Service Maker gives Python access to the pipeline and its metadata.",
+    can: ["Read boxes, IDs and labels for every frame", "Connect DeepStream to your own rules and alerts", "Test your logic on saved results, without a GPU"],
+    goal: "Get boxes, track IDs and labels out of DeepStream and into Python.",
+    deliverable: "A script that prints the box, ID and labels of every person in a clip.",
+    why: "This is the bridge between the AI and your application. Everything useful you build sits on the other side of it.",
+    concepts: [
+      { t: "Service Maker for Python", d: "In DeepStream 9.2 the older pyds bindings are marked as deprecated, and Service Maker (pyservicemaker) is the newer Python route. It comes with DeepStream, so there is nothing extra to install." },
+      { t: "Probes", d: "A probe is a small function that DeepStream calls for every batch, so you can read its metadata. Keep it light." },
+      { t: "What each object gives you", d: "A box, a class, a confidence score, a track ID, and the labels from any second-stage classifier. Field names can differ between versions, so print them once to be sure." },
+      { t: "Keep the video fast", d: "Do only light work inside the probe. Put the results in a queue and let another thread do the slow work, so the video never waits.", code: "from dataclasses import dataclass\n\n@dataclass\nclass Observation:\n    track_id: int\n    box: tuple      # (left, top, width, height)\n    score: float\n    labels: dict    # for example {\"helmet\": \"on\"}" }
+    ],
+    tasks: [
+      { t: "Run the Service Maker quick-start example", d: "Follow the quick start and confirm that it runs in your container." },
+      { t: "Print the object fields once", d: "Look at what the metadata really contains in your version." },
+      { t: "Convert boxes back to the real picture size", d: "DeepStream resizes frames, so boxes are in the resized picture. Scale them to your camera’s resolution." },
+      { t: "Put the results into a queue", d: "Let a worker thread read from the queue, so the probe stays fast." },
+      { t: "Save a few batches to a JSON file", d: "Use the file in tests, so you can check your rules without a GPU." }
+    ],
+    res: [
+      { t: "Service Maker for Python: quick start", d: "The official starting point for pyservicemaker.", tag: "Docs", url: "https://docs.nvidia.com/deepstream/9.2/text/DS_service_maker_python_quick_start" },
+      { t: "DeepStream SDK", d: "Metadata reference and release notes.", tag: "Docs", url: "https://developer.nvidia.com/deepstream-sdk" }
+    ],
+    check: [
+      { q: "What is a probe?", a: "A function DeepStream calls for every batch so your code can read the metadata." },
+      { q: "Why should heavy work stay out of the probe?", a: "It would slow the video pipeline down. Hand the work to another thread through a queue." }
+    ] },
+
+  /* ---------------------------------------------------------- 6 */
+  { n: 6, st: 1, title: "Turn detections into rules and alerts", hours: 6,
+    plain: "A detection says “there is a person without a helmet in this frame”. A rule says “raise one alert only if it lasts 2 seconds, inside this zone, once per person”. Rules turn noisy AI output into alerts that people trust.",
+    can: ["Alert only when a problem lasts long enough", "Ignore areas that do not matter, such as an office or a road", "Attach a picture to every alert as evidence"],
+    goal: "One worker without a helmet raises one alert, with a picture.",
+    deliverable: "An alert with a snapshot appears in your dashboard or log in under 5 seconds.",
+    why: "Too many false alerts and people stop reading them. Good rules matter as much as a good model.",
+    concepts: [
+      { t: "Persistence", d: "Require the problem to last for a set time, such as 2 seconds, before alerting. This removes one-frame mistakes." },
+      { t: "Cooldown", d: "After an alert for one person, wait before alerting again for the same person. This stops repeated alerts." },
+      { t: "Zones", d: "Draw the area where a rule applies. A simple test is whether the point between a person’s feet is inside the zone.", code: "import cv2, numpy as np\nzone = np.array([[100, 400], [900, 400], [900, 700], [100, 700]], dtype=np.int32)\ninside = cv2.pointPolygonTest(zone, (x_foot, y_foot), False) >= 0" },
+      { t: "Evidence and delay", d: "DeepStream usually keeps frames on the GPU, so take a fresh snapshot for the alert. Measure the time from the start of the problem to the alert on screen. A good target is a few seconds." }
+    ],
+    tasks: [
+      { t: "Write a small rule function", d: "Input: one observation per person per frame. Output: raise an alert or not." },
+      { t: "Add persistence and cooldown", d: "Make both values easy to change, and test them with saved metadata." },
+      { t: "Add a zone check", d: "Use the point between the feet. Test one inside and one outside." },
+      { t: "Save a snapshot with each alert", d: "Draw the box on the picture so a person can see the problem at once." },
+      { t: "Time the whole chain", d: "Measure from the start of the problem to the alert, on 20 test events. Write down the slowest." }
+    ],
+    res: [
+      { t: "OpenCV documentation", d: "Drawing, polygons and image saving.", tag: "Docs", url: "https://docs.opencv.org" },
+      { t: "Service Maker for Python: quick start", d: "Where the metadata comes from.", tag: "Docs", url: "https://docs.nvidia.com/deepstream/9.2/text/DS_service_maker_python_quick_start" }
+    ],
+    check: [
+      { q: "What do persistence and cooldown each prevent?", a: "Persistence prevents alerts from one-frame mistakes. Cooldown prevents repeated alerts for the same person." },
+      { q: "Why take a fresh snapshot for an alert?", a: "The frames in the pipeline usually stay in GPU memory, so it is simpler to grab a new picture from the camera when an alert fires." }
+    ] },
+
+  /* ---------------------------------------------------------- 7 */
+  { n: 7, st: 2, title: "Set up TAO", hours: 4,
+    plain: "TAO stands for Train, Adapt and Optimize. It lets you fine-tune NVIDIA’s pre-trained models with settings files instead of writing training code. You bring labelled pictures. TAO does the training and exports an ONNX model.",
+    can: ["Teach a model a new job, such as “helmet on or off”", "Start from a model that already knows a lot, so you need less data", "Export a model that DeepStream and TensorRT can use"],
+    goal: "TAO runs on a GPU workstation.",
+    deliverable: "One example from the TAO documentation runs from start to end.",
+    why: "Training needs more GPU memory than running a model does. Find out early that your workstation is big enough.",
+    concepts: [
+      { t: "Fine-tuning", d: "You do not train from nothing. You start from a model that already learned general patterns and adjust it with your own examples. This needs far fewer pictures." },
+      { t: "Spec files", d: "A spec file is a text file that says what data to use and how long to train. It replaces the training code you would normally write." },
+      { t: "Hardware needs", d: "TAO’s requirements page lists a minimum GPU. At the time of writing it asks for compute capability 7.0 or newer and 16 GB of GPU memory. Check the page for your version." },
+      { t: "NGC account and API key", d: "TAO downloads its containers from NVIDIA’s registry, so you need a free NGC account and an API key.", code: "pip3 install nvidia-tao\ndocker login nvcr.io\n# username: $oauthtoken\n# password: <your NGC API key>" }
+    ],
+    tasks: [
+      { t: "Check the GPU against the TAO requirements", d: "Compare compute capability and memory with the page for your TAO version." },
+      { t: "Create an NGC account and an API key", d: "Keep the key private. Never share it in a chat or commit it to a repository." },
+      { t: "Install the TAO launcher", d: "It starts the right containers for each task.", code: "pip3 install nvidia-tao" },
+      { t: "Log in to the NVIDIA registry", d: "Use $oauthtoken as the username and your API key as the password.", code: "docker login nvcr.io" },
+      { t: "Run one example from the TAO documentation", d: "Any small example is enough. You only need to see a training container start and finish." }
+    ],
+    res: [
+      { t: "TAO Toolkit documentation", d: "Requirements, tasks and spec file references.", tag: "Docs", url: "https://docs.nvidia.com/tao/" },
+      { t: "TAO and DeepStream", d: "How TAO models are used in DeepStream.", tag: "Docs", url: "https://docs.nvidia.com/deepstream/9.2/text/DS_TAO_integration" },
+      { t: "NGC catalogue", d: "Pre-trained models to start from.", tag: "Catalogue", url: "https://catalog.ngc.nvidia.com" }
+    ],
+    check: [
+      { q: "What does fine-tuning save you?", a: "Data and time. You start from a model that already knows general patterns, so you need far fewer labelled pictures." },
+      { q: "What replaces training code in TAO?", a: "A spec file, which is a text file of settings." }
+    ] },
+
+  /* ---------------------------------------------------------- 8 */
+  { n: 8, st: 2, title: "Prepare the data for training", hours: 5,
+    plain: "A model learns from examples. The cleaner and more varied your labelled pictures, the better it works. The most important rule is to keep a test set the model never sees, so that your score is honest.",
+    can: ["Get a score you can trust", "Find out early if you have too few examples of one class", "Compare models fairly, because they use the same test set"],
+    goal: "Labelled pictures in the format TAO reads, with a sealed test set.",
+    deliverable: "A folder with train, val and test sets, class counts, and a locked test set.",
+    why: "Most disappointing models are caused by data problems, not by the training. A leaked test set gives a score that is too good to be true.",
+    concepts: [
+      { t: "Data format", d: "Classification tasks usually read one folder per class. Detection tasks read annotation files such as COCO. Check which format your TAO task expects.", code: "dataset/\n  train/helmet_on/   train/helmet_off/\n  val/helmet_on/     val/helmet_off/\n  test/helmet_on/    test/helmet_off/" },
+      { t: "Split by camera and by day", d: "If near-identical frames from one clip land in both train and test, the score looks better than it really is. Split by camera and by day, so the test set shows scenes the model never saw." },
+      { t: "Class balance", d: "Problems are rare in normal footage. You may have thousands of “helmet on” pictures and very few “helmet off”. Count them, and decide how to get more of the rare ones." },
+      { t: "Consistent labels", d: "Write down what each label means, with examples of edge cases. Two people labelling the same picture differently will confuse the model." }
+    ],
+    tasks: [
+      { t: "Write down the classes and what each one means", d: "Include edge cases, such as a helmet carried in the hand." },
+      { t: "Export your reviewed labels", d: "Use the format your TAO task needs." },
+      { t: "Split into train, val and test", d: "Split by camera and by day, not by random frame." },
+      { t: "Count the pictures per class", d: "Write down how few examples the rare classes have." },
+      { t: "Seal the test set", d: "Move it to a folder that training never reads. Do not look at it while tuning." }
+    ],
+    res: [
+      { t: "TAO Toolkit documentation", d: "Dataset formats for each task.", tag: "Docs", url: "https://docs.nvidia.com/tao/" },
+      { t: "COCO format", d: "The annotation format used by many detection tasks.", tag: "Reference", url: "https://cocodataset.org/#format-data" }
+    ],
+    check: [
+      { q: "Why split by camera and day instead of by random frame?", a: "Frames from the same clip look almost the same. Random splitting puts near-copies in both sets, which inflates the score." },
+      { q: "What is a sealed test set?", a: "A test set that training and tuning never touch, so the final score is honest." }
+    ] },
+
+  /* ---------------------------------------------------------- 9 */
+  { n: 9, st: 2, title: "Fine-tune and export a model", hours: 6,
+    plain: "Now you train: run TAO on your data and see how well it works. Then you export the model as ONNX and load it into DeepStream as a second-stage model that checks each person it finds.",
+    can: ["Turn “find a person” into “is this person wearing a helmet?”", "Get a score per camera, so you know where it is weak", "Use the model in your live pipeline"],
+    goal: "Your first trained model, with a real score, running in DeepStream.",
+    deliverable: "A score table per camera, and an ONNX file that loads in DeepStream.",
+    why: "This is the first time you see how good the system really is. Look at the weak cameras, not only the average.",
+    concepts: [
+      { t: "Precision and recall", d: "Precision: of the alerts raised, how many were right. Recall: of the real problems, how many were found. You usually trade one against the other by changing the threshold." },
+      { t: "Evaluate on the sealed test set, per camera", d: "An average hides problems. A model can be excellent on a close camera and poor on a far one. Report each camera on its own." },
+      { t: "Train, then export", d: "TAO commands follow a pattern like the one below. The exact network names depend on your TAO version, so follow the documentation.", code: "tao model <network_name> train -e <spec_file>.yaml\ntao model <network_name> export -e <spec_file>.yaml" },
+      { t: "Use it as a second-stage model", d: "DeepStream can run a first model that finds people, then a second model on each person to check what they wear.", code: "[property]\nonnx-file=helmet_classifier.onnx\nprocess-mode=2\nnetwork-type=1\noperate-on-gie-id=1\noperate-on-class-ids=0\nclassifier-threshold=0.5" }
+    ],
+    tasks: [
+      { t: "Write the training spec file", d: "Point it at your train and val folders. Keep the first run short, to check the setup." },
+      { t: "Train the first model", d: "Look at the loss and the validation score as it trains." },
+      { t: "Evaluate on the sealed test set", d: "Record precision and recall for each camera." },
+      { t: "Export to ONNX", d: "Keep the ONNX file and the spec file together, with a version name." },
+      { t: "Load the model in DeepStream", d: "Add it as a second-stage model and run your topic 6 clip again." }
+    ],
+    res: [
+      { t: "TAO Toolkit documentation", d: "Training, evaluation and export for each task.", tag: "Docs", url: "https://docs.nvidia.com/tao/" },
+      { t: "TAO and DeepStream", d: "Using TAO models inside DeepStream.", tag: "Docs", url: "https://docs.nvidia.com/deepstream/9.2/text/DS_TAO_integration" },
+      { t: "ONNX", d: "The model file format.", tag: "Reference", url: "https://onnx.ai" }
+    ],
+    check: [
+      { q: "Why report scores per camera?", a: "An average can hide cameras where the model is weak, such as far or dark views." },
+      { q: "What does process-mode=2 mean in the DeepStream config?", a: "The model runs as a secondary model, on objects found by an earlier model." }
+    ] },
+
+  /* ---------------------------------------------------------- 10 */
+  { n: 10, st: 3, title: "Auto-label with Grounding DINO", hours: 5,
+    plain: "Drawing boxes by hand is slow. Grounding DINO finds objects from a text prompt such as “a person” or “a helmet”, so people only check and fix the boxes. It works best on large, clear objects. It often misses small or distant ones.",
+    can: ["Pre-draw boxes on thousands of pictures", "Spend human time on checking, not drawing", "Measure how much labelling time you really save"],
+    goal: "Measure, on real frames, how much hand labelling the tool saves.",
+    deliverable: "A table of minutes per frame by hand and with pre-labels, plus a list of where it fails.",
+    why: "Labelling is often the biggest cost of an AI project. Measure the saving on your own pictures before you plan around it.",
+    concepts: [
+      { t: "Zero-shot detection", d: "“Zero-shot” means the model finds things you describe in words, without training on them first." },
+      { t: "Writing prompts", d: "Use short noun phrases separated by full stops, such as “a person. a helmet. a safety vest.”. Try small changes and compare the results." },
+      { t: "Thresholds", d: "A higher threshold gives fewer, safer boxes but misses more. A lower one finds more but adds wrong boxes. Tune it on a small sample.", code: "from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection\n\nname = \"IDEA-Research/grounding-dino-tiny\"\nprocessor = AutoProcessor.from_pretrained(name)\nmodel = AutoModelForZeroShotObjectDetection.from_pretrained(name)\ninputs = processor(images=image, text=\"a person. a helmet. a safety vest.\", return_tensors=\"pt\")\n# see the model card for the post-processing step" },
+      { t: "Where it fails", d: "Small or distant people, crowded scenes and odd angles. Skip people who are too small to judge, since your rules will not judge them either." }
+    ],
+    tasks: [
+      { t: "Run Grounding DINO on 200 frames", d: "Use prompts for person, helmet and vest." },
+      { t: "Label the same 200 frames by hand", d: "Time it. Then time how long it takes to check and fix the auto-labels." },
+      { t: "Note where it fails", d: "Collect examples: distant people, blur, crowding." },
+      { t: "Skip people that are too small", d: "Choose a minimum size, such as 100 pixels tall, and leave smaller people out." },
+      { t: "Write down the measured saving", d: "Use your own number from now on, not a guess." }
+    ],
+    res: [
+      { t: "Grounding DINO on GitHub", d: "Code, paper and examples.", tag: "Code", url: "https://github.com/IDEA-Research/GroundingDINO" },
+      { t: "Transformers documentation", d: "Using Grounding DINO through Hugging Face.", tag: "Docs", url: "https://huggingface.co/docs/transformers" }
+    ],
+    check: [
+      { q: "What does “zero-shot” mean here?", a: "The model finds things you describe in a text prompt, without being trained on them first." },
+      { q: "Why measure the saving yourself?", a: "It depends on your pictures. Distant or blurry footage gives much smaller savings than clear footage." }
+    ] },
+
+  /* ---------------------------------------------------------- 11 */
+  { n: 11, st: 3, title: "Label once per person track", hours: 5,
+    plain: "The same worker appears in dozens of frames of one clip. If you label every frame, you check almost the same picture again and again. With tracking, you label the worker once and the answer applies to all of that worker’s frames.",
+    can: ["Cut the number of pictures a person must check", "Remove near-duplicate frames before labelling", "Follow an object through a video with SAM 2"],
+    goal: "One label covers every frame of one worker.",
+    deliverable: "A short report with the time per track against the time per frame.",
+    why: "This is often the largest labelling saving. It also shows that the number of crops is not the same as the number of different examples.",
+    concepts: [
+      { t: "Near-duplicate frames", d: "Neighbouring frames of a clip look alike. Convert frames to image embeddings, group the similar ones, and keep a few from each group." },
+      { t: "Tracks from your tracker", d: "Your DeepStream tracker already gives each person an ID. Group the crops by ID to get a track." },
+      { t: "SAM 2", d: "Segment Anything Model 2 follows an object through a video after you mark it once. It can link people better than a simple tracker when they overlap, but it needs more GPU memory. It comes in several sizes." },
+      { t: "Variety still matters", d: "One track gives many crops but only one person. Pick tracks from different people, cameras, times of day and weather." }
+    ],
+    tasks: [
+      { t: "Remove near-duplicate frames", d: "Use image embeddings and clustering. Keep a few frames from each group." },
+      { t: "Group the crops by track ID", d: "Use the IDs from your tracker." },
+      { t: "Try SAM 2 on a short clip", d: "Compare its tracks with your tracker’s. Keep it only if it clearly links people better." },
+      { t: "Label one track and check the result", d: "Make sure one answer reaches every crop of that track." },
+      { t: "Compare time per track and per frame", d: "Write down the saving, and check that the variety did not drop." }
+    ],
+    res: [
+      { t: "SAM 2 on GitHub", d: "Code, model sizes and video examples.", tag: "Code", url: "https://github.com/facebookresearch/sam2" },
+      { t: "DeepStream SDK", d: "Tracker settings and track IDs.", tag: "Docs", url: "https://developer.nvidia.com/deepstream-sdk" }
+    ],
+    check: [
+      { q: "Why is one label per track not the same as more data?", a: "Many crops of one person are almost the same example. Variety comes from different people, cameras and conditions." },
+      { q: "When is SAM 2 worth using?", a: "When it links people across frames clearly better than your tracker, for example in crowded or overlapping scenes." }
+    ] },
+
+  /* ---------------------------------------------------------- 12 */
+  { n: 12, st: 3, title: "Augmentation and the inpainting check", hours: 6,
+    plain: "Real footage is mostly normal. Problem cases, such as a worker without a helmet, are rare, and so are bad weather and night. Augmentation edits your pictures to add variety. Inpainting goes further and changes part of a real photo to create rare cases.",
+    can: ["Make the model cope with glare, dust, shadows, rain and low light", "Create more examples of rare problems", "Test whether synthetic pictures really help"],
+    goal: "Add variety to training and test if inpainting is worth it.",
+    deliverable: "A go or no-go note for inpainting, with scores from the real test set.",
+    why: "Synthetic pictures can help, or they can teach the wrong cues. Only a real test set can tell you which.",
+    concepts: [
+      { t: "Environmental augmentation", d: "Simulate glare, dust, shadows, rain, low light and infrared grayscale on your training pictures. It is cheap and a standard practice.", code: "import albumentations as A\n\naug = A.Compose([\n    A.RandomBrightnessContrast(p=0.5),\n    A.RandomShadow(p=0.3),\n    A.RandomRain(p=0.2),\n    A.RandomSunFlare(p=0.2),\n    A.GaussNoise(p=0.3),\n    A.ToGray(p=0.2),\n])" },
+      { t: "Inpainting with ControlNet and Stable Diffusion", d: "ControlNet adds guidance, such as a pose, to Stable Diffusion. With inpainting you change one part of a real photo, for example remove a helmet, while keeping the real background.", code: "from diffusers import StableDiffusionControlNetInpaintPipeline, ControlNetModel" },
+      { t: "The risks", d: "Edited pictures can have odd artefacts or teach cues that do not exist in real life. Check each picture by eye. Use synthetic pictures for training only, never for the test set." },
+      { t: "Always compare on real data", d: "Train once with and once without the synthetic pictures. Compare both on the real-only test set. Keep the synthetic data only if the real score goes up." }
+    ],
+    tasks: [
+      { t: "Add environmental augmentation to training", d: "Train again and compare the real test score." },
+      { t: "Make about 20 inpainted violations", d: "Remove helmets or change vests on real backgrounds." },
+      { t: "Check each one by eye", d: "Throw out pictures with artefacts or odd details." },
+      { t: "Train with and without them", d: "Keep everything else the same." },
+      { t: "Write a go or no-go note", d: "Include both scores and what you saw." }
+    ],
+    res: [
+      { t: "ControlNet on GitHub", d: "Code and paper.", tag: "Code", url: "https://github.com/lllyasviel/ControlNet" },
+      { t: "Diffusers documentation", d: "Pipelines for Stable Diffusion, ControlNet and inpainting.", tag: "Docs", url: "https://huggingface.co/docs/diffusers" },
+      { t: "Albumentations", d: "A library of image augmentations.", tag: "Docs", url: "https://albumentations.ai/docs/" }
+    ],
+    check: [
+      { q: "Why must the test set stay real?", a: "Because the system will work on real footage. A score on synthetic pictures says little about that." },
+      { q: "When do you keep synthetic training pictures?", a: "Only when the score on the real test set goes up with them." }
+    ] },
+
+  /* ---------------------------------------------------------- 13 */
+  { n: 13, st: 4, title: "TensorRT engines and model updates", hours: 5,
+    plain: "TensorRT reads your ONNX model and builds an engine, a file tuned for one specific GPU. The engine runs faster, but it only works on that GPU type and TensorRT version. So you keep the ONNX file as the master copy and build the engine on each machine.",
+    can: ["Run the same model several times faster", "Update a model on a running site, with a way back", "Keep many machines in step with one master model"],
+    goal: "Ship a new model to a machine without stopping the video.",
+    deliverable: "A model changes on a running pipeline and rolls back cleanly.",
+    why: "Models change often. A safe update path is what keeps a system useful after the first month.",
+    concepts: [
+      { t: "What an engine is", d: "A TensorRT engine is an optimised version of your model for one GPU type and one TensorRT version. Copying an engine to another GPU does not work. Copy the ONNX file and build there.", code: "trtexec --onnx=model.onnx --saveEngine=model.engine --fp16" },
+      { t: "Precision", d: "FP16 is usually faster and close in accuracy to FP32. Always compare the engine’s outputs with the ONNX model’s, on your real test set." },
+      { t: "Updating a running pipeline", d: "DeepStream can reload a model when its engine file changes, using a utility called EngineFileMonitor. Check the “on the fly model update” part of the documentation for its limits." },
+      { t: "Keep a way back", d: "Keep the previous engine. If the new model misbehaves, switching back should take minutes." }
+    ],
+    tasks: [
+      { t: "Build a TensorRT engine from your ONNX file", d: "Do it on the GPU that will run it.", code: "trtexec --onnx=model.onnx --saveEngine=model.engine --fp16" },
+      { t: "Compare engine and ONNX outputs", d: "Run the same pictures through both and compare scores." },
+      { t: "Swap the engine on a running pipeline", d: "Use the update mechanism from the documentation." },
+      { t: "Roll back to the previous engine", d: "Check that the old model works again." },
+      { t: "Record build time and file size", d: "You will need them when you plan updates for many machines." }
+    ],
+    res: [
+      { t: "TensorRT documentation", d: "Building and running engines, trtexec options.", tag: "Docs", url: "https://docs.nvidia.com/deeplearning/tensorrt/latest/index.html" },
+      { t: "DeepStream SDK", d: "On-the-fly model update and engine settings.", tag: "Docs", url: "https://developer.nvidia.com/deepstream-sdk" },
+      { t: "ONNX", d: "The master model format.", tag: "Reference", url: "https://onnx.ai" }
+    ],
+    check: [
+      { q: "Why keep the ONNX file and not copy engines between machines?", a: "An engine only works on the GPU type and TensorRT version it was built for. ONNX works everywhere." },
+      { q: "What should you check after switching to FP16?", a: "That accuracy on your real test set stays close to the original." }
+    ] },
+
+  /* ---------------------------------------------------------- 14 */
+  { n: 14, st: 4, title: "Night and poor light", hours: 5,
+    plain: "At night, cameras give dark, noisy and blurry pictures, and AI models make more mistakes. Three things help: better light, better camera settings, and software that brightens the picture before the model sees it. Train and test on real night footage too.",
+    can: ["See what really improves night results on your cameras", "Choose cheap fixes first: angles and settings cost nothing", "Report night accuracy honestly, apart from day accuracy"],
+    goal: "Find out what helps at night, using real night footage.",
+    deliverable: "A short night report with scores for each change you tried.",
+    why: "A system that works only in daylight is only half a system. Night is where many projects fail.",
+    concepts: [
+      { t: "Light", d: "Infrared illuminators extend how far a camera can see at night, but the picture becomes grayscale, so colours such as a hi-vis vest are lost. White LED lights keep colour. Tilting a camera away from streetlights and headlights stops the automatic exposure from darkening the scene." },
+      { t: "Camera settings", d: "A shutter speed of about 1/100 to 1/125 second reduces motion blur on moving people, though the picture gets darker. 3D digital noise reduction smooths night noise, but it can smear fast movement. Try both on your own cameras." },
+      { t: "Brighten before the model sees it", d: "CLAHE boosts contrast in small areas of the picture. Gamma correction brightens dark areas. Both are cheap, and you can run them before inference.", code: "import cv2\nimg = cv2.imread(\"night.jpg\")\nlab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)\nl, a, b = cv2.split(lab)\nclahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))\nl = clahe.apply(l)\nout = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)" },
+      { t: "Train and report for night", d: "Include real night and infrared pictures in training. Report night accuracy separately, because averaging it with day hides the problem." }
+    ],
+    tasks: [
+      { t: "Collect night clips", d: "Include some with infrared on and some with extra lights." },
+      { t: "Try CLAHE and gamma", d: "Compare detections and scores with and without them." },
+      { t: "Try the camera settings", d: "Set the shutter and noise reduction, then compare clips." },
+      { t: "Test the vest model on infrared pictures", d: "Without colour, check whether it still works." },
+      { t: "Write the night report", d: "One table: each change, the night score, and the cost." }
+    ],
+    res: [
+      { t: "OpenCV: histogram equalisation", d: "CLAHE explained with code.", tag: "Tutorial", url: "https://docs.opencv.org/4.x/d5/daf/tutorial_py_histogram_equalization.html" },
+      { t: "Albumentations", d: "Augmentations for low light and noise.", tag: "Docs", url: "https://albumentations.ai/docs/" }
+    ],
+    check: [
+      { q: "Why can infrared lighting hurt vest detection?", a: "Infrared pictures are grayscale, so the bright colour of a hi-vis vest is lost." },
+      { q: "Why report night accuracy separately?", a: "An average with day hides weak night results." }
+    ] },
+
+  /* ---------------------------------------------------------- 15 */
+  { n: 15, st: 4, title: "Benchmark, soak test and sign-off", hours: 7,
+    plain: "Before anyone trusts the system, you measure it: how many cameras one GPU handles, how fast alerts appear, and whether it runs for days without a crash. Then you write one clear note that says what passed, what failed, and what to do next.",
+    can: ["Give a number for cameras per GPU", "Prove that alerts arrive fast enough", "Show the rules work, in words people can read"],
+    goal: "Write the go or no-go note for the NVIDIA path, with numbers.",
+    deliverable: "A note with capacity, alert delay, soak test results and a recommendation.",
+    why: "A clear note with numbers is what lets a team decide. It is the product of the whole walkthrough.",
+    concepts: [
+      { t: "Capacity", d: "Add cameras until the AI load is near 70% or the decoder near 90%. The number you reach is your cameras per GPU. Leave room for busy moments." },
+      { t: "Alert delay", d: "Time many test events from the start of the problem to the alert on screen. Report a percentile, for example “95% of alerts in under 5 seconds”, not just the average." },
+      { t: "Soak test", d: "Run the system for a long time, such as 72 hours. Watch for crashes, memory growth and GPU temperature. Problems that appear only after hours are common." },
+      { t: "Rules in plain language", d: "Gherkin writes tests as Given, When, Then sentences that non-programmers can read and agree to. Tools such as pytest-bdd run them automatically.", code: "Feature: Helmet alert\n  Scenario: Alert after the helmet is missing\n    Given a worker is inside a zone that requires a helmet\n    And the persistence time is 2 seconds\n    When the worker is seen without a helmet for 2 seconds\n    Then one alert appears\n    And no second alert for that worker appears within 60 seconds" }
+    ],
+    tasks: [
+      { t: "Measure cameras per GPU", d: "Use your target frame rate. Keep the AI load under 70%." },
+      { t: "Time 50 test events", d: "Report the 95th percentile of the alert delay." },
+      { t: "Run the soak test", d: "Record crashes, memory use and GPU temperature over 72 hours." },
+      { t: "Write and run the Gherkin scenarios", d: "Cover the main rules: persistence, cooldown and zones." },
+      { t: "Write the go or no-go note", d: "What passed, what failed, what it means for cost and cameras per GPU, and what you recommend." }
+    ],
+    res: [
+      { t: "Gherkin reference", d: "How to write Given, When, Then scenarios.", tag: "Docs", url: "https://cucumber.io/docs/gherkin/" },
+      { t: "pytest-bdd", d: "Run Gherkin scenarios with pytest.", tag: "Docs", url: "https://pytest-bdd.readthedocs.io" },
+      { t: "TensorRT documentation", d: "Performance tuning and profiling.", tag: "Docs", url: "https://docs.nvidia.com/deeplearning/tensorrt/latest/index.html" }
+    ],
+    check: [
+      { q: "Why report a percentile for alert delay?", a: "An average hides slow cases. A percentile, like 95% under 5 seconds, tells people what to expect most of the time." },
+      { q: "What does a soak test find?", a: "Problems that appear only after hours, such as memory growth, overheating or rare crashes." }
+    ] }
+  ];
+
+  var FURTHER = {
+    1: { t: "Other places to run: cloud and edge GPUs", d: "You can rent a cloud GPU for tests, or use a Jetson module at the edge. DeepStream and TensorRT run on both data-centre GPUs and Jetson.", s: "eco-edge" },
+    2: { t: "Where DeepStream fits", d: "NVIDIA groups its vision AI tools under the Metropolis name. DeepStream is the video-pipeline part, and TAO and TensorRT sit beside it.", s: "eco-serve" },
+    3: { t: "Hardware decoders across GPUs", d: "Different GPU models have different numbers of video decoders. Check NVIDIA’s video decode support matrix before you choose hardware.", s: "eco-edge" },
+    4: { t: "Other trackers", d: "DeepStream ships more than one tracker type besides NvDCF. Try another one and compare its ID switches with your own table.", s: "eco-serve" },
+    5: { t: "Serving models as a service", d: "When other programs need to send pictures and get answers, look at Dynamo-Triton (formerly Triton Inference Server) and NIM microservices.", s: "eco-serve" },
+    6: { t: "Events at scale", d: "Large systems send alerts to a message bus, such as Kafka, so many other services can use them. Think about where your alerts should go next.", s: "eco-serve" },
+    7: { t: "The model library", d: "TAO’s model zoo has purpose-built models such as PeopleNet, general-purpose backbones and foundation models. See how to choose between them.", s: "eco-models" },
+    8: { t: "Data quality tools", d: "Open-source tools such as FiftyOne and cleanlab can find duplicates and wrong labels in a dataset before you train on it.", s: "eco-data" },
+    9: { t: "Smaller, faster models", d: "After training you can shrink a model with pruning, quantisation or distillation. TAO and NVIDIA Model Optimizer both help.", s: "eco-small" },
+    10: { t: "Vision-language models", d: "Grounding DINO is one kind of open-vocabulary model. TAO’s model zoo also lists a Grounding DINO that you can fine-tune.", s: "eco-lang" },
+    11: { t: "Masks, not only boxes", d: "SAM 2 gives exact shapes (masks). Masks help when you need to measure area, or cut an object out of a picture.", s: "eco-lang" },
+    12: { t: "Simulation and synthetic data", d: "Instead of editing photos, you can render scenes in a 3D simulator such as NVIDIA Omniverse and get perfect labels for free.", s: "eco-synth" },
+    13: { t: "Serving and scaling", d: "With many sites, keep a model registry and a rollout plan. A server such as Dynamo-Triton can serve many models from one place.", s: "eco-serve" },
+    14: { t: "Image enhancement models", d: "Beyond CLAHE and gamma, learned models can remove noise or brighten pictures. Test the speed cost before you add one to a live pipeline.", s: "eco-small" },
+    15: { t: "Monitoring after launch", d: "Scores can fall over time as lighting, cameras or seasons change. Plan to test again on fresh footage on a regular schedule.", s: "eco-learn" }
+  };
+
+  var ASSIGN = {
+    1: { t: "GPU readiness report", time: "1 hour", brief: "Pick a machine you could really use. Write a one-page report that says whether DeepStream 9.2 can run on it, and why.",
+      hand: ["The one-page report", "A screenshot of nvidia-smi run inside the DeepStream container"],
+      rubric: ["GPU, compute capability, memory, driver and CUDA are listed correctly", "There is a clear answer, supported or not supported, with the reason", "The container test output is shown"] },
+    2: { t: "The annotated pipeline", time: "2 hours", brief: "Run the sample pipeline and annotate its config file. Change one setting, run it again and explain what changed.",
+      hand: ["The config file with one comment for every block", "Two output pictures, before and after your change", "Three sentences on what the change did"],
+      rubric: ["Every block has a correct one-line explanation", "The change is small and its effect is described honestly", "The two pictures show a real difference"] },
+    3: { t: "Capacity experiment", time: "2 hours", brief: "Find how many streams your GPU handles. Test the main stream and the sub-stream, and record the AI load and the decoder load as you add streams.",
+      hand: ["A table of streams against sm and dec, for both stream types", "A short conclusion that names the first bottleneck"],
+      rubric: ["Both stream types are measured", "Each reading is steady for about a minute, not a single glance", "The conclusion follows from the numbers"] },
+    4: { t: "Tracker quality test", time: "2 hours", brief: "Use three clips with different crowding. Count how often an ID switches or a person gets a new ID.",
+      hand: ["A table of clips, people, ID switches and the switch rate", "One idea to reduce the switches, with a reason"],
+      rubric: ["The clips and the counting method are described", "Counts are checked on a second pass", "The idea matches what you saw"] },
+    5: { t: "Metadata recorder and replay", time: "3 hours", brief: "Write a script that saves one minute of observations to a JSON-lines file, and a second script that replays them without a GPU.",
+      hand: ["Both scripts", "The recorded file, or a sample of 100 lines"],
+      rubric: ["Boxes are scaled to the real picture size", "The replay gives the same observations", "The probe stays light, and heavy work happens outside it"] },
+    6: { t: "Rule engine with tests", time: "3 hours", brief: "Build the rule function with persistence, cooldown and a zone check. Write at least six automatic tests, including edge cases. Time 20 test events from start to alert.",
+      hand: ["The rule code and the tests", "A table of 20 delays, with the slowest and the 95th percentile"],
+      rubric: ["Tests pass and cover edge cases, such as a person leaving the zone", "The settings are easy to change", "The delay is measured, not guessed"] },
+    7: { t: "TAO sanity check", time: "2 hours", brief: "Run a TAO example and decide whether your workstation is big enough for the training you plan.",
+      hand: ["The log of the example run", "One paragraph that compares your GPU with the TAO requirements"],
+      rubric: ["The run finishes and the log is attached", "Requirements are quoted for the version you used", "The paragraph gives a clear yes, no or not yet"] },
+    8: { t: "Dataset card", time: "3 hours", brief: "Write a dataset card for your training data, and prove that the test set is clean.",
+      hand: ["The dataset card: classes, counts, split method and known problems", "A check that no camera and day appears in both train and test"],
+      rubric: ["The split is by camera and day", "Class counts show any imbalance honestly", "The check is a script or a table, not a promise"] },
+    9: { t: "Model report with failures", time: "4 hours", brief: "Train a model and report precision and recall for each camera. Show three failures and explain each one.",
+      hand: ["The score table per camera", "Three failure pictures with a short explanation each", "The threshold you chose, and why"],
+      rubric: ["Scores come from the sealed test set", "Weak cameras are named, not hidden by an average", "The threshold trade-off is explained"] },
+    10: { t: "Auto-label benchmark", time: "3 hours", brief: "Label 200 frames by hand and with Grounding DINO pre-labels. Compare the time and the quality.",
+      hand: ["A table of minutes per frame both ways, and the saving", "A gallery of failure cases", "A recommended minimum person size"],
+      rubric: ["Both timings use the same frames", "Quality is checked, not only speed", "The recommendation uses your own numbers"] },
+    11: { t: "Variety study", time: "3 hours", brief: "Compare labelling per frame with labelling per track. Count how many different people each approach covers.",
+      hand: ["Time per track and per frame", "The number of distinct people and cameras covered", "A sampling rule you recommend"],
+      rubric: ["The time saving is measured", "Variety is counted, not assumed", "The sampling rule is specific"] },
+    12: { t: "Go or no-go memo", time: "4 hours", brief: "Train two models, with and without synthetic pictures. Decide whether the synthetic pictures stay.",
+      hand: ["A one-page memo with both scores on the real test set", "Six example synthetic pictures: three good and three rejected"],
+      rubric: ["Everything except the data is the same in both runs", "The test set is real only", "The decision follows from the scores"] },
+    13: { t: "Update and rollback drill", time: "3 hours", brief: "Write a runbook for updating a model on a running pipeline and rolling it back. Then follow it and time the downtime.",
+      hand: ["A runbook of about ten steps", "The measured downtime and the engine build time"],
+      rubric: ["Someone else could follow the steps", "Rollback is tested, not only described", "Engine and ONNX outputs were compared"] },
+    14: { t: "Night experiment report", time: "4 hours", brief: "Test at least three changes for night footage, such as CLAHE, gamma and a camera setting. Report the effect of each.",
+      hand: ["A table of change, night score, side effects and cost", "A recommendation"],
+      rubric: ["Night scores are separate from day scores", "Each change is tested alone", "The loss of colour on infrared pictures is discussed"] },
+    15: { t: "Go or no-go note", time: "4 hours", brief: "Write the decision note for your own system: capacity, alert delay, soak test and a recommendation.",
+      hand: ["A note of one to two pages, with numbers", "The raw results in an appendix"],
+      rubric: ["It has cameras per GPU, the 95th percentile delay and the soak results", "It states a clear decision and the risks", "Every number can be traced to the appendix"] }
+  };
+  var LABS = {
+    E1: { t: "Lab: model library scavenger hunt", time: "2 hours", brief: "Pick one task, for example finding vehicles in thermal pictures. Find three candidate models in different libraries and compare them.",
+      hand: ["A table: model, library, size, input size, format, licence, speed and accuracy claim", "A recommendation of one model, with reasons"],
+      rubric: ["The three models come from at least two libraries", "Licences are read, not assumed", "The recommendation names what you would test first"] },
+    E2: { t: "Lab: distillation", time: "4 hours", brief: "Use a large model as the teacher and a small one as the student. Train the student on the teacher’s predictions, and compare it with a student trained on labels only.",
+      hand: ["Both student scores and the teacher score on the same test set", "The speed of teacher and student in frames per second", "One paragraph: was it worth it?"],
+      rubric: ["All three models are scored on the same real test set", "Speed and accuracy are both reported", "The conclusion admits where the student is weaker"] }
+  };
+  var CAP = {
+    brief: "Build and defend a small vision-AI system of your own. Pick a use case that interests you: people counting at a door, a vehicle counter, an area-intrusion alert, or a safety-equipment check. Use the tools from this course. If you have no GPU, build the parts that do not need one and explain what you would measure on a GPU.",
+    items: ["Write the problem and your success numbers: what must it detect, how accurately, and how fast", "Make a dataset card, with a sealed real test set", "Choose or train a model, and compare at least two options with numbers", "Show a pipeline that reads video and produces results", "Add rules and an alert with a picture as evidence", "Measure cameras per GPU and the alert delay (95th percentile)", "Write a short risk note, including night or poor conditions", "Give a five-minute demo and hand in a one-page summary"],
+    rubric: [["Problem and numbers", "Success is defined before building, in numbers a stranger could check."], ["Data and test set", "The test set is real, sealed and split by camera and day."], ["Model choice", "At least two options are compared fairly, and the choice is explained."], ["Working system", "The demo runs from video to alert without hand-holding."], ["Measurement", "Capacity and delay are measured and reported with honest limits."], ["Judgement", "The risks are real, and the next steps are specific."]],
+    demo: ["Minute 1: the problem and why it matters", "Minute 2: the data and how you kept the test set clean", "Minute 3: the live demo", "Minute 4: your numbers: accuracy, capacity, delay", "Minute 5: what failed, and what you would do next"]
+  };
+
+  // ---------- state
+  function load() { try { var v = JSON.parse(localStorage.getItem(KEY)); return v && typeof v === "object" ? v : {}; } catch (e) { return {}; } }
+  var S = load(); S.done = S.done || {}; S.asg = S.asg || {}; S.cap = S.cap || {};
+  var $ = function (id) { return document.getElementById(id); };
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function count(o) { var c = 0; for (var k in o) if (o[k]) c++; return c; }
+  var totalTasks = 0; T.forEach(function (t) { totalTasks += t.tasks.length; });
+  var ASG_KEYS = []; T.forEach(function (t) { ASG_KEYS.push("a" + t.n); }); ASG_KEYS.push("E1", "E2");
+  var UNITS = totalTasks + ASG_KEYS.length + CAP.items.length;
+  function key(t, i) { return "t" + t.n + "-" + i; }
+  function doneCount(t) { var c = 0; t.tasks.forEach(function (x, i) { if (S.done[key(t, i)]) c++; }); return c; }
+  function stateOf(t) { var c = doneCount(t); return c === 0 ? "none" : (c === t.tasks.length ? "done" : "part"); }
+  function overall() { return Math.round((count(S.done) + count(S.asg) + count(S.cap)) / UNITS * 100); }
+  function paintProgress() { var p = overall(); $("prog-t").textContent = p + "% done"; $("prog-f").style.width = p + "%"; }
+  function refreshAll() { paintProgress(); var r = currentRoute(); if (r === "course") buildCourse(); if (r === "assignments") buildAssignments(); updateStrip(); updateRail(); }
+
+  // ---------- code blocks
+  function codeBlock(text) {
+    var pre = el("pre", "has-cp"); pre.appendChild(el("code", null, text));
+    var b = el("button", "cp", "Copy"); b.type = "button"; b.setAttribute("aria-label", "Copy code");
+    b.addEventListener("click", function () { copy(text, b); }); pre.appendChild(b); return pre;
+  }
+  function copy(text, btn) {
+    function ok() { btn.textContent = "Copied"; setTimeout(function () { btn.textContent = "Copy"; }, 1500); }
+    function fail() { btn.textContent = "Select and copy"; setTimeout(function () { btn.textContent = "Copy"; }, 2200); }
+    function legacy() { try { var ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select(); var r = document.execCommand("copy"); document.body.removeChild(ta); r ? ok() : fail(); } catch (e) { fail(); } }
+    try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, legacy); else legacy(); } catch (e) { legacy(); }
+  }
+  function section(id, title, small) { var s = el("div", "sec"); s.id = id; var h = el("h2", null, title); if (small) h.appendChild(el("small", null, small)); s.appendChild(h); return s; }
+  function list(items) { var ul = el("ul"); items.forEach(function (x) { ul.appendChild(el("li", null, x)); }); return ul; }
+
+  // ---------- assignment block (used on topic pages and the ecosystem labs)
+  function assignBlock(id, a) {
+    var box = el("div", "assign"); box.appendChild(el("h3", null, a.t)); box.appendChild(el("div", "meta", "About " + a.time));
+    box.appendChild(el("p", null, a.brief));
+    box.appendChild(el("h4", null, "What to hand in")); box.appendChild(list(a.hand));
+    box.appendChild(el("h4", null, "How to judge your own work")); box.appendChild(list(a.rubric));
+    var lab = el("label", "tick"), cb = el("input"); cb.type = "checkbox"; cb.checked = !!S.asg[id];
+    cb.addEventListener("change", function () { if (cb.checked) S.asg[id] = 1; else delete S.asg[id]; save(); refreshAll(); });
+    lab.appendChild(cb); lab.appendChild(document.createTextNode("I finished this assignment")); box.appendChild(lab); return box;
+  }
+
+  // ---------- course map
+  function buildCourse() {
+    var host = $("page-course"); host.innerHTML = "";
+    host.appendChild(el("div", "crumb", "The course map"));
+    var h = el("h1", "big", "15 days, five stages"); h.id = "h-course"; h.style.maxWidth = "20ch"; host.appendChild(h);
+    host.appendChild(el("p", "lead", "Follow the stages in order, or jump to the one you need. Each day has a plain-words explanation, five tasks and an assignment."));
+    var topics = 0; T.forEach(function (t) { if (doneCount(t) === t.tasks.length) topics++; });
+    var st = el("div", "stats");
+    [[overall() + "%", "overall"], [topics + " of " + T.length, "topics done"], [count(S.done) + " of " + totalTasks, "tasks done"], [count(S.asg) + " of " + ASG_KEYS.length, "assignments done"], [count(S.cap) + " of " + CAP.items.length, "capstone steps"]].forEach(function (x) { var d = el("div"); d.appendChild(el("b", null, x[0])); d.appendChild(el("span", null, x[1])); st.appendChild(d); });
+    host.appendChild(st);
+    var blurbs = ["Get a supported GPU, the driver and Docker working, then run DeepStream on your own camera.", "Turn video into results: batching, tracking, Python, and rules that raise alerts.", "Teach a model a new job with TAO, with data you can trust and a score you can believe.", "Spend human time on checking, not drawing: auto-labelling, tracks, augmentation and synthetic pictures.", "Make it fast, update it safely, handle the night, and finish with numbers a team can decide on."];
+    STAGES.forEach(function (s, si) {
+      var band = el("div", "band"), left = el("div"), h2 = el("h2"), dot = el("i"); dot.style.background = s.color; h2.appendChild(dot); h2.appendChild(document.createTextNode("Stage " + (si + 1) + ": " + s.name)); left.appendChild(h2); left.appendChild(el("p", null, blurbs[si]));
+      var tiles = el("div", "tiles");
+      T.filter(function (t) { return t.st === si; }).forEach(function (t) {
+        var a = el("a", "tile"); a.href = "#topic-" + t.n; var c = doneCount(t);
+        a.appendChild(el("span", "d", "Day " + t.n + ", " + t.hours + " hours")); a.appendChild(el("b", null, t.title));
+        var m = el("div", "m"), i = el("i"); i.style.width = Math.round(c / t.tasks.length * 100) + "%"; m.appendChild(i); a.appendChild(m);
+        var s2 = el("div", "s"); s2.appendChild(el("span", null, c + " of " + t.tasks.length + " tasks")); s2.appendChild(el("span", null, S.asg["a" + t.n] ? "Assignment done" : "Assignment open")); a.appendChild(s2); tiles.appendChild(a);
+      });
+      band.appendChild(left); band.appendChild(tiles); host.appendChild(band);
+    });
+  }
+
+  // ---------- topic page
+  var SECTIONS = [["sec-plain", "In plain words"], ["sec-learn", "What to learn"], ["sec-build", "What to build"], ["sec-assign", "Assignment"], ["sec-check", "Check yourself"], ["sec-further", "Go further"], ["sec-res", "Resources"]];
+  function renderTopic(n) {
+    var t = T[n - 1], host = $("page-topic"); host.innerHTML = "";
+    var strip = el("div", "strip"); strip.id = "strip"; strip.setAttribute("aria-label", "Days");
+    T.forEach(function (x) { var a = el("a", null, String(x.n)); a.href = "#topic-" + x.n; a.dataset.n = x.n; a.title = "Day " + x.n + ": " + x.title; a.dataset.s = stateOf(x); if (x.n === n) a.setAttribute("aria-current", "page"); strip.appendChild(a); });
+    host.appendChild(strip);
+    var grid = el("div", "tgrid"), main = el("div"), rail = el("aside", "rail"); rail.id = "rail";
+    main.appendChild(el("div", "crumb", "Stage " + (t.st + 1) + ": " + STAGES[t.st].name + ", topic " + t.n + " of " + T.length));
+    main.appendChild(el("h1", "t", t.title));
+    var chips = el("div", "chips");
+    [["Day " + t.n, true], [t.concepts.length + " ideas", false], [t.tasks.length + " tasks", false], ["1 assignment", false], [t.hours + " hours", false]].forEach(function (c) { chips.appendChild(el("span", "chip" + (c[1] ? " on" : ""), c[0])); });
+    main.appendChild(chips);
+    var plain = el("div"); plain.id = "sec-plain"; plain.appendChild(el("p", "lead", t.plain)); main.appendChild(plain);
+    var g = el("div", "goal"); g.appendChild(el("h2", null, "Today’s goal")); g.appendChild(el("p", null, t.goal));
+    var dp = el("p"); dp.appendChild(el("b", null, "You are done when: ")); dp.appendChild(document.createTextNode(t.deliverable)); g.appendChild(dp);
+    var wp = el("p"); wp.appendChild(el("b", null, "Why it matters: ")); wp.appendChild(document.createTextNode(t.why)); g.appendChild(wp); main.appendChild(g);
+    var s0 = el("div", "sec"); var h0 = el("h2", null, "What you can do with it"); s0.appendChild(h0); var ul = list(t.can); ul.style.margin = "14px 0 0"; ul.style.paddingLeft = "20px"; s0.appendChild(ul); main.appendChild(s0);
+    var s1 = section("sec-learn", "What to learn", t.concepts.length + " ideas");
+    t.concepts.forEach(function (c) { var d = el("div", "concept"); d.appendChild(el("h3", null, c.t)); d.appendChild(el("p", null, c.d)); if (c.code) d.appendChild(codeBlock(c.code)); s1.appendChild(d); });
+    main.appendChild(s1);
+    var s2 = section("sec-build", "What to build", t.tasks.length + " tasks");
+    t.tasks.forEach(function (x, i) {
+      var box = el("div", "task"), lab = el("label"), cb = el("input"); cb.type = "checkbox"; cb.checked = !!S.done[key(t, i)];
+      cb.addEventListener("change", function () { if (cb.checked) S.done[key(t, i)] = 1; else delete S.done[key(t, i)]; save(); refreshAll(); });
+      var txt = el("div"); txt.appendChild(el("b", null, x.t)); txt.appendChild(el("span", "d", x.d)); lab.appendChild(cb); lab.appendChild(txt); box.appendChild(lab); if (x.code) box.appendChild(codeBlock(x.code)); s2.appendChild(box);
+    });
+    main.appendChild(s2);
+    var s3 = section("sec-assign", "Assignment", "prove what you learned"); s3.appendChild(assignBlock("a" + t.n, ASSIGN[t.n])); main.appendChild(s3);
+    var s4 = section("sec-check", "Check yourself", "answers are hidden until you open them");
+    t.check.forEach(function (c) { var d = el("details"); d.appendChild(el("summary", null, c.q)); d.appendChild(el("p", null, c.a)); s4.appendChild(d); });
+    main.appendChild(s4);
+    var f = FURTHER[t.n], s5 = section("sec-further", "Go further", "beyond this course"), fb = el("div", "further"); fb.appendChild(el("h3", null, f.t)); fb.appendChild(el("p", null, f.d));
+    var more = el("a", null, "Read more on the ecosystem page"); more.href = "#ecosystem"; more.addEventListener("click", function () { S.jump = f.s; }); fb.appendChild(more); s5.appendChild(fb); main.appendChild(s5);
+    var s6 = section("sec-res", "Resources", t.res.length + " links"), grid2 = el("div", "res");
+    t.res.forEach(function (r) { var a = el("a"); a.href = r.url; a.target = "_blank"; a.rel = "noopener"; a.appendChild(el("b", null, r.t)); a.appendChild(el("span", null, r.d)); a.appendChild(el("em", null, r.tag)); grid2.appendChild(a); });
+    s6.appendChild(grid2); main.appendChild(s6);
+    var pn = el("div", "pn"), prev = T[n - 2], next = T[n];
+    if (prev) { var p = el("a"); p.href = "#topic-" + prev.n; p.appendChild(el("small", null, "Previous")); p.appendChild(document.createTextNode(prev.title)); pn.appendChild(p); } else { var p0 = el("a"); p0.href = "#start"; p0.appendChild(el("small", null, "Back to")); p0.appendChild(document.createTextNode("The start page")); pn.appendChild(p0); }
+    if (next) { var nx = el("a", "next"); nx.href = "#topic-" + next.n; nx.appendChild(el("small", null, "Next")); nx.appendChild(document.createTextNode(next.title)); pn.appendChild(nx); } else { var fin = el("a", "next"); fin.href = "#assignments"; fin.appendChild(el("small", null, "Finish with")); fin.appendChild(document.createTextNode("The capstone project")); pn.appendChild(fin); }
+    main.appendChild(pn);
+    rail.appendChild(el("h2", null, "On this page"));
+    SECTIONS.forEach(function (s) { var b = el("button", null, s[1]); b.type = "button"; b.addEventListener("click", function () { var e = $(s[0]); if (e) e.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" }); }); rail.appendChild(b); });
+    var mb = el("div", "meterbox"); mb.appendChild(el("div", null, "This day")); var m = el("div", "meter"); m.appendChild(el("i")); mb.appendChild(m); mb.appendChild(el("div", null, "")); mb.appendChild(el("div", null, "")); rail.appendChild(mb);
+    grid.appendChild(main); grid.appendChild(rail); host.appendChild(grid); updateRail();
+  }
+  function reduceMotion() { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+  function updateStrip() { document.querySelectorAll("#strip a").forEach(function (a) { a.dataset.s = stateOf(T[a.dataset.n - 1]); }); }
+  function updateRail() {
+    var r = $("rail"); if (!r) return; var n = currentTopic(); if (!n) return; var t = T[n - 1], c = doneCount(t), mb = r.querySelector(".meterbox"); if (!mb) return;
+    mb.querySelector(".meter i").style.width = Math.round(c / t.tasks.length * 100) + "%"; var ds = mb.querySelectorAll("div"); ds[ds.length - 2].textContent = c + " of " + t.tasks.length + " tasks"; ds[ds.length - 1].textContent = S.asg["a" + n] ? "Assignment done" : "Assignment open";
+  }
+
+  // ---------- assignments page
+  function buildAssignments() {
+    var host = $("page-assignments"); host.innerHTML = "";
+    host.appendChild(el("div", "crumb", "Prove it"));
+    var h = el("h1", "big", "Assignments and the capstone"); h.id = "h-assign"; h.style.maxWidth = "20ch"; host.appendChild(h);
+    host.appendChild(el("p", "lead", "Every topic ends with an assignment, and the ecosystem page has two extra labs. They are written so you can check your own work, or hand it to a mentor. Finish with the capstone project."));
+    var s1 = el("div", "sec"); s1.appendChild(el("h2", null, "Topic assignments")); var all = T.map(function (t) { return ["a" + t.n, String(t.n), "#topic-" + t.n, ASSIGN[t.n]]; }).concat([["E1", "L1", "#ecosystem", LABS.E1], ["E2", "L2", "#ecosystem", LABS.E2]]);
+    all.forEach(function (x) {
+      var row = el("div", "arow"); row.appendChild(el("div", "n", x[1]));
+      var mid = el("div"), b = el("b", null, x[3].t); mid.appendChild(b); mid.appendChild(el("div", "m", "About " + x[3].time)); row.appendChild(mid);
+      var lab = el("label", "tick"); lab.style.margin = "0"; lab.style.padding = "0"; lab.style.border = "0"; var cb = el("input"); cb.type = "checkbox"; cb.checked = !!S.asg[x[0]]; cb.setAttribute("aria-label", "Finished: " + x[3].t);
+      cb.addEventListener("change", function () { if (cb.checked) S.asg[x[0]] = 1; else delete S.asg[x[0]]; save(); refreshAll(); }); lab.appendChild(cb); row.appendChild(lab);
+      var d = el("details"); d.appendChild(el("summary", null, "Brief, hand-in and how to judge it")); var inn = el("div", "in"); inn.appendChild(el("p", null, x[3].brief)); inn.lastChild.style.padding = "0 0 8px"; var h4 = el("h4", null, "What to hand in"); h4.style.margin = "6px 0 4px"; inn.appendChild(h4); inn.appendChild(list(x[3].hand)); var h42 = el("h4", null, "How to judge your own work"); h42.style.margin = "10px 0 4px"; inn.appendChild(h42); inn.appendChild(list(x[3].rubric));
+      var go = el("a", null, x[2] === "#ecosystem" ? "Open the ecosystem page" : "Open day " + x[1]); go.href = x[2]; go.style.display = "inline-block"; go.style.marginTop = "10px"; inn.appendChild(go); d.appendChild(inn); row.appendChild(d); s1.appendChild(row);
+    });
+    host.appendChild(s1);
+    var s2 = el("div", "sec"); s2.appendChild(el("h2", null, "Capstone project")); var cap = el("div", "cap"); cap.appendChild(el("h3", null, "Build and defend a mini vision-AI system")); var p = el("p", null, CAP.brief); p.style.marginTop = "8px"; cap.appendChild(p);
+    cap.appendChild(el("h4", null, "Your checklist")); var ul = el("ul", "chk");
+    CAP.items.forEach(function (it, i) { var li = el("li"), lab = el("label"), cb = el("input"); cb.type = "checkbox"; cb.checked = !!S.cap["c" + i]; cb.addEventListener("change", function () { if (cb.checked) S.cap["c" + i] = 1; else delete S.cap["c" + i]; save(); refreshAll(); }); lab.appendChild(cb); lab.appendChild(el("span", null, it)); li.appendChild(lab); ul.appendChild(li); });
+    cap.appendChild(ul); s2.appendChild(cap);
+    var h3 = el("h3", null, "How it is judged"); h3.style.marginTop = "22px"; h3.style.fontSize = "19px"; s2.appendChild(h3);
+    var tw = el("div", "tw"), tb = el("table"), th = el("thead"), trh = el("tr"); ["Criterion", "What good looks like"].forEach(function (x) { trh.appendChild(el("th", null, x)); }); th.appendChild(trh); tb.appendChild(th);
+    var tbody = el("tbody"); CAP.rubric.forEach(function (r) { var tr = el("tr"); tr.appendChild(el("td", "k", r[0])); tr.appendChild(el("td", null, r[1])); tbody.appendChild(tr); }); tb.appendChild(tbody); tw.appendChild(tb); s2.appendChild(tw);
+    var h32 = el("h3", null, "Five-minute demo outline"); h32.style.marginTop = "22px"; h32.style.fontSize = "19px"; s2.appendChild(h32); var dl = list(CAP.demo); dl.className = "plain-list"; dl.style.marginTop = "8px"; s2.appendChild(dl);
+    host.appendChild(s2);
+  }
+
+  // ---------- labs on the ecosystem page
+  function buildLabs() { ["E1", "E2"].forEach(function (k) { var host = $("lab-" + k); host.innerHTML = ""; var h = el("h3", null, "Assignment"); h.style.marginTop = "24px"; h.style.fontSize = "19px"; host.appendChild(h); host.appendChild(assignBlock(k, LABS[k])); }); }
+
+  // ---------- routing and theme
+  function currentRoute() { var r = location.hash.replace("#", ""); if (/^topic-\d+$/.test(r)) return "topic"; return ["course", "assignments", "ecosystem", "glossary"].indexOf(r) >= 0 ? r : "start"; }
+  function currentTopic() { var m = /^topic-(\d+)$/.exec(location.hash.replace("#", "")); var n = m ? parseInt(m[1], 10) : 0; return n >= 1 && n <= T.length ? n : 0; }
+  var PAGES = ["start", "course", "topic", "assignments", "ecosystem", "glossary"];
+  function route() {
+    var r = currentRoute(), n = currentTopic(); if (r === "topic" && !n) r = "start";
+    PAGES.forEach(function (p) { $("page-" + p).hidden = p !== r; });
+    if (r === "course") buildCourse(); if (r === "assignments") buildAssignments(); if (r === "topic") renderTopic(n); if (r === "ecosystem") buildLabs();
+    document.querySelectorAll(".links a").forEach(function (a) { if (a.dataset.r === r || (r === "topic" && a.dataset.r === "course")) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+    var jump = S.jump; S.jump = null;
+    if (r === "ecosystem" && jump && $(jump)) { setTimeout(function () { $(jump).scrollIntoView({ behavior: "auto", block: "start" }); }, 0); } else { window.scrollTo(0, 0); }
+    document.title = (r === "topic" ? T[n - 1].title + " | " : "") + "Vision AI on NVIDIA GPUs: a hands-on course";
+  }
+  window.addEventListener("hashchange", route);
+  function isDark() { var a = document.documentElement.getAttribute("data-theme"); return a ? a === "dark" : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches); }
+  function paintTheme() { $("theme").textContent = isDark() ? "Light mode" : "Dark mode"; }
+  $("theme").addEventListener("click", function () { S.theme = isDark() ? "light" : "dark"; document.documentElement.setAttribute("data-theme", S.theme); save(); paintTheme(); });
+
+  if (S.theme) document.documentElement.setAttribute("data-theme", S.theme);
+  paintTheme(); paintProgress(); route();
+})();
+</script>
+</body>
+</html>
